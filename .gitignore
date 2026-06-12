@@ -1,0 +1,33 @@
+# 비밀키 — 절대 커밋 금지 (_keys\는 repo 밖)
+.env
+.env.*
+!.env.template
+
+# 데이터 원본 (202 zip, 재파싱용 로컬 보존)
+data/raw/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# ML 산출물
+ml/artifacts/
+
+# iOS / Capacitor
+*.ipa
+app/ios/App/Pods/
+
+# OS
+.DS_Store
+Thumbs.db

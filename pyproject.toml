@@ -1,0 +1,40 @@
+[project]
+name = "jejunow"
+version = "0.1.0"
+description = "제주 관광 혼잡도 예측 기반 대안 코스 추천 — 백엔드(api)·모델(ml)"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "requests>=2.32",
+    "pandas>=2.2",
+    "lightgbm>=4.5",
+    "python-dotenv>=1.0",
+    "holidays>=0.50",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.11",
+    "ruff>=0.6",
+    "types-requests",
+    "pandas-stubs",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "RUF"]
+# 한글 텍스트·전각괄호 매칭 정규식에서 의도적으로 사용
+allowed-confusables = ["×", "（", "）"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["api", "ml", "collect_datalab.py"]
+
+[[tool.mypy.overrides]]
+module = ["lightgbm.*", "holidays.*"]
+ignore_missing_imports = true
