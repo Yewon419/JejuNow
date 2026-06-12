@@ -1,41 +1,40 @@
 # JejuNow 진행상황 (재개용)
 
 > 재부팅/새 세션 시 이 파일부터 읽으면 이어서 진행 가능.
-> 설계 = `BUILD_PLAN.md`. **자율 구현 지시서 = `FABLE_TASKS.md`** (새 세션 Fable 전용).
+> 설계 = `BUILD_PLAN.md`. 자율 구현 지시서 = `FABLE_TASKS.md`.
 
 ## 현재 단계
-**Phase 0 완료.** 키·R1 검증·데이터 확보 끝. → 새 세션에서 Fable이 `FABLE_TASKS.md` 읽고 Phase 0.5~ 구현.
+**Fable 자율 구현 진행 중 (2026-06-13).** Phase 0.5 완료 → Phase 1 진행 중.
 
-## ✅ 완료 (2026-06-12~13)
-- **TourAPI 4.0 키** 발급·검증 (제주 areaCode=39, 관광지 384건, resultCode 0000). `_keys\JejuNow\.env`
-- **R1 확정** — 모델 타겟 = 데이터랩 **인기 점유율(%)** (절대 검색량 아님). 상세 `발급_체크리스트.md`
-- **데이터랩 8년치 수집 완료** — `collect_datalab.py`로 202 zip + `data/datalab_popular_long.csv` 36,360행 (2018-01~2026-05 × 제주시50110·서귀포50130 × 6연령대 × TOP30)
-- **FABLE_TASKS.md 작성** — 자율 구현 지시서
+## Phase 0.5 — 스캐폴딩 ✅ (커밋 5e7c3c4)
+- 모노레포: `app/`(Next.js 15+TS+Tailwind) `api/`(FastAPI) `ml/` `db/migrations/`
+- `.venv` + ruff/mypy strict + tsc/eslint 게이트 전부 통과
+- git init + .gitignore (.env·data/raw 등 제외)
 
-## R1 핵심 (모델 타겟 변경)
-- 데이터랩에 스팟×월 절대 검색량 없음 → **스팟×월 인기 점유율(%)**, 기초지자체 TOP30, 2018-01~ 가능
-- 제안서 원안에서 **타겟만 변경**(절대값→점유율%), 시계열 회귀·lag/rolling·day_profile은 유효
-- 데이터랩 ID ↔ TourAPI contentId 다름 → 이름 매핑 필요 (Phase 1 난관)
+## Phase 1 — 데이터 파이프라인 (진행 중)
+- ✅ Supabase 스키마 적용 (MCP `apply_migration`): spots, **spot_popularity**(R1 반영),
+  visitors, weather, day_profile, congestion_pred(+is_imputed), user_trips. RLS=읽기공개·쓰기차단
+- ✅ weather 101개월 적재 (ASOS 184 제주, 2018-01~2026-05). **기상청 키 게이트웨이 반영됨** — skip 불필요
+- 🔄 spots 재수집 중 (백그라운드)
+- ⬜ spot_popularity 재적재 (매핑 개선 후)
+- ❌ **visitors(월 입도객) skip** — 공개 API 미확보. 거시피처 없이 진행, 모델 note에 명시
 
-## 키 발급 현황
-- ✅ TourAPI (data.go.kr) — `.env` 적재·검증 완료
-- ✅ **Supabase** — URL·anon·service_role 3키 `.env` 적재·검증(auth health OK, 양키 인증통과). DB는 빈 상태(Fable이 Phase1 생성). 프로젝트 ref `vuneeprkjcaxhdhgwcva`
-- ✅ **Kakao** — JS·REST 키 `.env` 적재·검증(REST 로컬API 실호출 OK). ⚠️ **Web 도메인 미등록**(포트 형식 문제) → Phase4에서 대표가 `http://localhost`+배포도메인 등록해야 지도 표시
-- ✅ 기상청 (ASOS 일자료 15059093) — 활용신청 완료. TourAPI 키 공통 사용. 2026-06-13 시점 게이트웨이 반영 전이라 403(정상, 수십분~1h 후 풀림). Fable Phase1 호출 시 재시도
-- (나중) Railway/Vercel/Apple
+### 결정·발견 로그 (2026-06-13)
+1. **TourAPI areaCode=39는 불완전** — 비자림·오설록 등 신규등록 스팟은 legacy areacode 공란.
+   `lDongRegnCd=50`(법정동) 조회로 전환 → 관광지 568+문화시설 96+레포츠 139 = **803건** (기존 384+55+87=526).
+2. **카테고리 = 신분류 lclsSystm1~3** 채택 (803/803 채워짐, legacy cat은 526/803).
+   cat1~3 컬럼에 lcls 코드 저장. day_profile·is_outdoor 휴리스틱도 lcls 기준으로 재작성.
+3. **이름매핑 5패스**: 수동맵 → 정규화 일치 → 지역접두어 제거 → 유일 포함 → **Kakao Local 좌표 매칭**(300m).
+   첫 시도(정규화 일치만)는 스팟 34%/행 46.5%로 부족했음. 미매핑은 `db/spot_name_map.csv` 리포트.
+4. 데이터랩 long CSV의 age_group은 이미 `전체/20/30/40/50/60` 정규형 (첫 적재 시 83% 탈락 버그 수정).
+5. PowerShell `Select-Object -First`가 파이프라인 조기종료로 적재 중단시킴 — 백그라운드 실행+파일 로그로 전환.
+6. visitors: 데이터랩은 세션쿠키 필요(만료됨), 공공데이터포털 월 입도객 API 미신청 — **skip**.
 
-## 다음 할 일
-1. **(대표)** Supabase·Kakao 키 발급 → `.env` (기상청은 선택). 가이드는 `발급_체크리스트.md`
-2. **(새 세션 Fable)** `FABLE_TASKS.md` 읽고 Phase 0.5(스캐폴딩)부터 구현 → 웹 데모(Vercel)까지 자율
-3. iOS 스토어 제출은 사람 단계(Apple $99·심사) — Fable이 Phase 5에서 멈추고 보고
-
-## 만든 파일
-- `BUILD_PLAN.md` — 설계·아키텍처·Phase·리스크
-- `FABLE_TASKS.md` — 자율 구현 지시서 (새 세션 진입점)
-- `PROGRESS.md` — 이 파일
-- `collect_datalab.py` — 데이터랩 수집기 (검증됨)
-- `data/raw/datalab/*.zip` (202), `data/datalab_popular_long.csv` (36,360행)
-- `_keys\JejuNow\.env`(키·repo밖), `.env.template`, `발급_체크리스트.md`
+## Phase 2~5 계획 (FABLE_TASKS.md 참조)
+- Phase 2: ml/train(LightGBM, 타겟=인기점유율%), profile(일중 prior), precompute(2026-06-13~08-31, 9~20시)
+- Phase 3: FastAPI /spots /congestion /simulate /alternatives. Railway 토큰 없음 → 배포설정만
+- Phase 4: 5화면 + Kakao Map + Vercel 배포. ⚠️ Kakao Web 도메인 미등록 — 대표가 localhost+Vercel 도메인 등록 필요
+- Phase 5: Capacitor iOS 구성까지 하고 정지(사람 단계)
 
 ## 키 보관
-`C:\Users\windg\Desktop\PROJECT\_keys\JejuNow\.env` (repo 밖, 커밋 안 됨)
+`C:\Users\windg\Desktop\PROJECT\_keys\JejuNow\.env` (repo 밖). 전 키 검증 완료(기상청 포함).

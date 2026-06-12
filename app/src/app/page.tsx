@@ -1,65 +1,35 @@
-import Image from "next/image";
+import { TravelerTypeSelect } from "@/components/TravelerTypeSelect";
 
-export default function Home() {
+export default function OnboardingPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="relative mx-auto flex min-h-dvh max-w-xl flex-col justify-between overflow-hidden px-6 py-12">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-32 right-[-20%] h-96 w-96 rounded-full bg-primary/15 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute bottom-[-10%] left-[-25%] h-96 w-96 rounded-full bg-lv1/10 blur-3xl"
+      />
+
+      <header className="relative pt-10">
+        <p className="text-sm font-medium tracking-widest text-primary">JEJU NOW</p>
+        <h1 className="mt-4 text-4xl font-bold leading-snug text-ink">
+          지금, 한적한
+          <br />
+          제주를 찾아서
+        </h1>
+        <p className="mt-4 max-w-sm text-base leading-relaxed text-dim">
+          관광 수요 데이터로 혼잡을 예측하고, 같은 매력의 한적한 대안 코스를 추천합니다.
+        </p>
+      </header>
+
+      <TravelerTypeSelect />
+
+      <p className="relative pt-8 text-center text-xs leading-relaxed text-dim/70">
+        혼잡도는 한국관광 데이터랩 인기 점유율(수요 프록시) 예측 × 일중 프로파일 합성값으로,
+        실측 혼잡도가 아닙니다.
+      </p>
+    </main>
   );
 }

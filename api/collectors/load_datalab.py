@@ -1,8 +1,11 @@
 """데이터랩 long CSV → Supabase `spot_popularity` 적재 + TourAPI 스팟 이름매핑.
 
-매핑 전략(순서대로):
-  1. db/spot_name_map.csv 의 수동 매핑(content_id 채워진 행) 우선
+매핑 전략(순서대로, 패스별 건수 로깅):
+  1. db/spot_name_map.csv 의 수동 매핑(content_id 채워진 행)
   2. 정규화 이름 완전일치 (공백·괄호내용·특수문자 제거)
+  3. TourAPI 명칭의 지역 접두어("제주"/"서귀포"/"제주서귀포") 제거 후 일치
+  4. 유일 포함 매칭 (한쪽 정규화명이 다른 쪽에 포함, 후보가 정확히 1개일 때만)
+  5. Kakao Local 키워드검색 좌표 → 300m 내 최근접 TourAPI 스팟
 실패분은 db/spot_name_map.csv 에 빈 content_id로 남겨 수동 보완 대상으로 리포트.
 
 실행: .venv\\Scripts\\python.exe -m api.collectors.load_datalab
@@ -12,25 +15,29 @@ from __future__ import annotations
 
 import csv
 import logging
+import math
 import re
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
+import requests
+
 from api.core.config import load_settings
+from api.core.http import as_dict, as_list, get_json
 from api.core.supabase import SupabaseRest
 
 logger = logging.getLogger(__name__)
 
+KAKAO_LOCAL_URL = "https://dapi.kakao.com/v2/local/search/keyword.json"
+KAKAO_DELAY_SEC = 0.06
+KAKAO_MATCH_RADIUS_KM = 0.3
+REGION_PREFIXES = ("제주서귀포", "서귀포", "제주")
+
 LONG_CSV = Path("data/datalab_popular_long.csv")
 NAME_MAP_CSV = Path("db/spot_name_map.csv")
-AGE_NORMALIZE = {
-    "전체": "전체",
-    "20대": "20",
-    "30대": "30",
-    "40대": "40",
-    "50대": "50",
-    "60대이상": "60",
-}
+# long CSV는 이미 정규화된 값 사용 (collect_datalab.py 산출 스키마)
+VALID_AGE_GROUPS = frozenset({"전체", "20", "30", "40", "50", "60"})
 _PAREN_RE = re.compile(r"[\(\[（【].*?[\)\]）】]")
 _STRIP_RE = re.compile(r"[\s·\-_&,'\".]+")
 
@@ -70,8 +77,8 @@ def read_long_csv(path: Path) -> list[DatalabRow]:
             if not (1 <= rank <= 30 and 0.0 <= ratio <= 100.0):
                 bad += 1
                 continue
-            age = AGE_NORMALIZE.get(rec["age_group"].strip())
-            if age is None or rec["region_code"] not in ("50110", "50130"):
+            age = rec["age_group"].strip()
+            if age not in VALID_AGE_GROUPS or rec["region_code"] not in ("50110", "50130"):
                 bad += 1
                 continue
             rows.append(
@@ -105,21 +112,78 @@ def read_manual_map(path: Path) -> dict[str, str]:
     return out
 
 
+@dataclass(frozen=True)
+class SpotRef:
+    spot_id: int
+    norm: str
+    lat: float
+    lng: float
+
+
+def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    rad = math.pi / 180
+    a = (
+        math.sin((lat2 - lat1) * rad / 2) ** 2
+        + math.cos(lat1 * rad) * math.cos(lat2 * rad) * math.sin((lng2 - lng1) * rad / 2) ** 2
+    )
+    return 6371 * 2 * math.asin(math.sqrt(a))
+
+
+def _strip_region_prefix(norm: str) -> str:
+    for prefix in REGION_PREFIXES:
+        if norm.startswith(prefix) and len(norm) > len(prefix) + 1:
+            return norm[len(prefix) :]
+    return norm
+
+
+def _kakao_resolve(
+    session: requests.Session, rest_key: str, name: str
+) -> tuple[float, float] | None:
+    """Kakao Local 키워드검색 → (lat, lng). 결과 없으면 None."""
+    session.headers["Authorization"] = f"KakaoAK {rest_key}"
+    payload = get_json(
+        session,
+        KAKAO_LOCAL_URL,
+        {"query": f"제주 {name}", "size": "3"},
+        log_params={"query": f"제주 {name}"},
+    )
+    docs = as_list(as_dict(payload, "kakao").get("documents"), "kakao.documents")
+    for raw in docs:
+        doc = as_dict(raw, "kakao doc")
+        x, y = doc.get("x"), doc.get("y")
+        if isinstance(x, str) and isinstance(y, str):
+            return float(y), float(x)
+    return None
+
+
 def build_mapping(
-    db: SupabaseRest, rows: list[DatalabRow]
+    db: SupabaseRest, rows: list[DatalabRow], kakao_rest_key: str
 ) -> tuple[dict[str, int], list[tuple[str, str]]]:
     """datalab_spot_id → spots.spot_id 매핑과 미매핑 (id, name) 목록 반환."""
-    spots = db.select_all("spots", {"select": "spot_id,content_id,name"})
-    by_norm: dict[str, int] = {}
+    raw_spots = db.select_all("spots", {"select": "spot_id,content_id,name,lat,lng"})
+    refs: list[SpotRef] = []
     by_content: dict[str, int] = {}
-    for s in spots:
+    for s in raw_spots:
         spot_id_raw, name_raw, content_raw = s["spot_id"], s["name"], s["content_id"]
-        if not isinstance(spot_id_raw, int) or not isinstance(name_raw, str):
+        lat_raw, lng_raw = s["lat"], s["lng"]
+        if (
+            not isinstance(spot_id_raw, int)
+            or not isinstance(name_raw, str)
+            or not isinstance(lat_raw, (int, float))
+            or not isinstance(lng_raw, (int, float))
+        ):
             raise RuntimeError(f"spots 행 형식 불량: {s!r}")
-        norm = normalize_name(name_raw)
-        by_norm.setdefault(norm, spot_id_raw)
+        refs.append(
+            SpotRef(spot_id_raw, normalize_name(name_raw), float(lat_raw), float(lng_raw))
+        )
         if isinstance(content_raw, str):
             by_content[content_raw] = spot_id_raw
+
+    by_norm: dict[str, int] = {}
+    by_stripped: dict[str, int] = {}
+    for ref in refs:
+        by_norm.setdefault(ref.norm, ref.spot_id)
+        by_stripped.setdefault(_strip_region_prefix(ref.norm), ref.spot_id)
 
     manual = read_manual_map(NAME_MAP_CSV)
     uniq: dict[str, str] = {}  # datalab_spot_id → name
@@ -127,17 +191,57 @@ def build_mapping(
         uniq.setdefault(r.datalab_spot_id, r.datalab_spot_name)
 
     mapping: dict[str, int] = {}
-    unmatched: list[tuple[str, str]] = []
+    pass_counts = {"manual": 0, "exact": 0, "prefix": 0, "contain": 0, "kakao": 0}
+    pending: list[tuple[str, str]] = []
     for dl_id, dl_name in uniq.items():
         manual_cid = manual.get(dl_id)
         if manual_cid and manual_cid in by_content:
             mapping[dl_id] = by_content[manual_cid]
+            pass_counts["manual"] += 1
             continue
-        spot_id = by_norm.get(normalize_name(dl_name))
+        dl_norm = normalize_name(dl_name)
+        spot_id = by_norm.get(dl_norm)
         if spot_id is not None:
             mapping[dl_id] = spot_id
+            pass_counts["exact"] += 1
+            continue
+        spot_id = by_stripped.get(dl_norm)
+        if spot_id is not None:
+            mapping[dl_id] = spot_id
+            pass_counts["prefix"] += 1
+            continue
+        if len(dl_norm) >= 4:
+            candidates = {
+                ref.spot_id
+                for ref in refs
+                if (dl_norm in ref.norm or (len(ref.norm) >= 4 and ref.norm in dl_norm))
+            }
+            if len(candidates) == 1:
+                mapping[dl_id] = candidates.pop()
+                pass_counts["contain"] += 1
+                continue
+        pending.append((dl_id, dl_name))
+
+    kakao_session = requests.Session()
+    unmatched: list[tuple[str, str]] = []
+    for dl_id, dl_name in pending:
+        coords = _kakao_resolve(kakao_session, kakao_rest_key, dl_name)
+        time.sleep(KAKAO_DELAY_SEC)
+        if coords is None:
+            unmatched.append((dl_id, dl_name))
+            continue
+        lat, lng = coords
+        nearest: tuple[float, int] | None = None
+        for ref in refs:
+            dist = _haversine_km(lat, lng, ref.lat, ref.lng)
+            if nearest is None or dist < nearest[0]:
+                nearest = (dist, ref.spot_id)
+        if nearest is not None and nearest[0] <= KAKAO_MATCH_RADIUS_KM:
+            mapping[dl_id] = nearest[1]
+            pass_counts["kakao"] += 1
         else:
             unmatched.append((dl_id, dl_name))
+    logger.info("매핑 패스별: %s", pass_counts)
     return mapping, unmatched
 
 
@@ -162,7 +266,7 @@ def main() -> None:
     logger.info("CSV 유효 행 %d건", len(rows))
 
     manual = read_manual_map(NAME_MAP_CSV)
-    mapping, unmatched = build_mapping(db, rows)
+    mapping, unmatched = build_mapping(db, rows, settings.kakao_rest_api_key)
     uniq_total = len(mapping) + len(unmatched)
     mapped_rows = sum(1 for r in rows if r.datalab_spot_id in mapping)
     logger.info(

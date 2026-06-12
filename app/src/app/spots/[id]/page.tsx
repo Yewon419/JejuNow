@@ -1,0 +1,167 @@
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { LevelBadge } from "@/components/LevelBadge";
+import { findAlternatives } from "@/lib/alternatives";
+import { LEVEL_COLOR, catLabel, todayInHorizon } from "@/lib/constants";
+import { fetchCongestion, fetchSpotById, fetchSpotDay, fetchSpots } from "@/lib/supabase";
+import type { Congestion, Spot } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
+
+export default async function SpotDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const spotId = Number(id);
+  if (!Number.isInteger(spotId)) notFound();
+
+  const date = todayInHorizon();
+  const spot = await fetchSpotById(spotId);
+  if (!spot) notFound();
+
+  const [day, allSpots] = await Promise.all([fetchSpotDay(spotId, date), fetchSpots()]);
+  const peak = day.reduce<(Congestion & { hour: number }) | null>(
+    (acc, cur) => (acc === null || cur.pressure > acc.pressure ? cur : acc),
+    null,
+  );
+  const calmHour = day.reduce<(Congestion & { hour: number }) | null>(
+    (acc, cur) => (acc === null || cur.pressure < acc.pressure ? cur : acc),
+    null,
+  );
+  const refHour = peak?.hour ?? 13;
+  const congestionAtRef = new Map<number, Congestion>(
+    (await fetchCongestion(date, refHour)).map((c) => [c.spot_id, c]),
+  );
+  const alternatives = findAlternatives(spot as Spot, allSpots, congestionAtRef, 4);
+  const maxPressure = Math.max(1, ...day.map((d) => d.pressure));
+
+  return (
+    <main className="mx-auto min-h-dvh max-w-xl pb-12">
+      <div className="relative h-60 w-full bg-surface">
+        {spot.image_url ? (
+          <Image
+            src={spot.image_url}
+            alt={spot.name}
+            fill
+            sizes="(max-width: 640px) 100vw, 576px"
+            className="object-cover"
+            priority
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/30 to-transparent" />
+        <Link
+          href="/dashboard"
+          aria-label="뒤로"
+          className="absolute left-4 top-4 rounded-full border border-line bg-bg/70 p-2 text-ink backdrop-blur"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+        </Link>
+      </div>
+
+      <div className="space-y-8 px-5 pt-2">
+        <header>
+          <p className="text-xs font-medium tracking-wide text-primary">
+            {spot.region} · {catLabel(spot.cat2)}
+            {spot.is_outdoor === true ? " · 야외" : spot.is_outdoor === false ? " · 실내" : ""}
+          </p>
+          <h1 className="mt-1 text-3xl font-bold text-ink">{spot.name}</h1>
+          {spot.addr ? <p className="mt-2 text-sm text-dim">{spot.addr}</p> : null}
+          {spot.opening_hours ? (
+            <p className="mt-1 text-sm text-dim">운영시간: {spot.opening_hours}</p>
+          ) : null}
+        </header>
+
+        <section aria-labelledby="timeline-heading">
+          <h2 id="timeline-heading" className="mb-1 text-lg font-bold text-ink">
+            오늘의 시간대별 혼잡 예측
+          </h2>
+          <p className="mb-4 text-xs text-dim">
+            {date} · 월 수요예측 × 일중 프로파일 합성값 (실측 아님)
+            {day[0]?.is_imputed ? " · 카테고리 평균 기반 추정치" : ""}
+          </p>
+          {day.length > 0 ? (
+            <>
+              <div className="flex h-36 items-end gap-1" role="img" aria-label="시간대별 혼잡도 막대그래프">
+                {day.map((d) => (
+                  <div key={d.hour} className="flex flex-1 flex-col items-center gap-1">
+                    <div
+                      className="w-full rounded-t-md"
+                      style={{
+                        height: `${Math.max(6, (d.pressure / maxPressure) * 120)}px`,
+                        backgroundColor: LEVEL_COLOR[d.level],
+                        opacity: 0.9,
+                      }}
+                    />
+                    <span className="text-[10px] text-dim">{d.hour}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                {calmHour ? (
+                  <div className="rounded-card border border-line bg-card p-3">
+                    <p className="text-xs text-dim">가장 한적</p>
+                    <p className="mt-1 font-bold text-lv1">{calmHour.hour}시</p>
+                  </div>
+                ) : null}
+                {peak ? (
+                  <div className="rounded-card border border-line bg-card p-3">
+                    <p className="text-xs text-dim">가장 붐빔</p>
+                    <p className="mt-1 font-bold text-lv4">{peak.hour}시</p>
+                  </div>
+                ) : null}
+              </div>
+            </>
+          ) : (
+            <p className="rounded-card border border-line bg-card p-4 text-sm text-dim">
+              이 날짜의 예측 데이터가 없습니다.
+            </p>
+          )}
+        </section>
+
+        <section aria-labelledby="alt-heading">
+          <h2 id="alt-heading" className="mb-1 text-lg font-bold text-ink">
+            비슷한데 더 한적한 곳
+          </h2>
+          <p className="mb-4 text-xs text-dim">
+            같은 카테고리({catLabel(spot.cat2)}) · {refHour}시 기준
+          </p>
+          <ul className="space-y-2">
+            {alternatives.map((alt) => (
+              <li key={alt.spot.spot_id}>
+                <Link
+                  href={`/spots/${alt.spot.spot_id}`}
+                  className="flex items-center justify-between gap-3 rounded-card border border-line bg-card p-4 transition-colors hover:border-primary"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-ink">{alt.spot.name}</p>
+                    <p className="text-xs text-dim">
+                      {alt.spot.region} · {alt.distanceKm}km
+                    </p>
+                  </div>
+                  <LevelBadge level={alt.congestion.level} imputed={alt.congestion.is_imputed} />
+                </Link>
+              </li>
+            ))}
+            {alternatives.length === 0 ? (
+              <li className="rounded-card border border-line bg-card p-4 text-sm text-dim">
+                같은 카테고리의 한적한 대안을 찾지 못했어요.
+              </li>
+            ) : null}
+          </ul>
+        </section>
+
+        <Link
+          href="/schedule"
+          className="block w-full rounded-card bg-primary py-4 text-center text-base font-bold text-deep transition-transform active:scale-[0.98]"
+        >
+          일정에 넣고 혼잡도 점검하기
+        </Link>
+      </div>
+    </main>
+  );
+}

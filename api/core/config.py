@@ -22,6 +22,7 @@ class Settings:
     supabase_service_role_key: str
     supabase_anon_key: str
     kakao_js_key: str
+    kakao_rest_api_key: str
 
 
 def _required(name: str) -> str:
@@ -41,4 +42,5 @@ def load_settings() -> Settings:
         supabase_service_role_key=_required("SUPABASE_SERVICE_ROLE_KEY"),
         supabase_anon_key=_required("SUPABASE_ANON_KEY"),
         kakao_js_key=_required("KAKAO_JS_KEY"),
+        kakao_rest_api_key=_required("KAKAO_REST_API_KEY"),
     )

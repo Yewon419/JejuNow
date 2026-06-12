@@ -1,7 +1,11 @@
 """TourAPI 4.0 제주 스팟 수집 → Supabase `spots` 적재.
 
-areaBasedList2(areaCode=39)로 관광지(12)·문화시설(14)·레포츠(28)를 수집하고,
-detailIntro2로 운영시간(usetime 계열)을 보강한다.
+areaBasedList2를 **법정동 코드(lDongRegnCd=50)**로 조회한다 — legacy areaCode=39는
+신규 등록 스팟(비자림 등 areacode 공란)을 누락시킴(2026-06-13 검증: 384 vs 568건).
+카테고리도 legacy cat1~3 대신 **신분류 lclsSystm1~3**을 cat1~3 컬럼에 저장
+(803/803 채워짐, legacy는 526/803만).
+
+수집 대상: 관광지(12)·문화시설(14)·레포츠(28). detailIntro2로 운영시간 보강.
 
 실행: .venv\\Scripts\\python.exe -m api.collectors.collect_spots
 """
@@ -21,7 +25,7 @@ from api.core.supabase import SupabaseRest
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://apis.data.go.kr/B551011/KorService2"
-JEJU_AREA_CODE = "39"
+JEJU_LDONG_CODE = "50"
 CONTENT_TYPES: tuple[tuple[str, str], ...] = (
     ("12", "관광지"),
     ("14", "문화시설"),
@@ -29,19 +33,26 @@ CONTENT_TYPES: tuple[tuple[str, str], ...] = (
 )
 NUM_ROWS = 100
 DETAIL_DELAY_SEC = 0.12
-# 제주(areaCode 39) 시군구: 3=서귀포시, 4=제주시 (구 1·2는 통합 폐지)
-SIGUNGU_REGION = {"3": "서귀포시", "4": "제주시"}
+# 법정동 시군구: 110=제주시, 130=서귀포시
+LDONG_REGION = {"110": "제주시", "130": "서귀포시"}
 # 운영시간 필드는 contentTypeId마다 다름
 USETIME_FIELD = {"12": "usetime", "14": "usetimeculture", "28": "usetimeleports"}
-# is_outdoor 휴리스틱: cat1 A01(자연)=야외, A02(인문)·A03(레포츠)는 cat2로 판별
-OUTDOOR_CAT2 = {
-    "A0101",  # 자연관광지
-    "A0102",  # 관광자원
-    "A0202",  # 관광단지 등 (혼합이나 야외 비중 높음)
-    "A0302",  # 육상 레포츠
-    "A0303",  # 수상 레포츠
+# is_outdoor 휴리스틱 (lclsSystm2 기준, 코드명은 lclsSystmCode2 API 확인값)
+OUTDOOR_LCLS2 = {
+    "NA01",  # 자연경관(산)
+    "NA02",  # 자연경관(하천·해양)
+    "NA03",  # 자연생태
+    "NA04",  # 자연공원
+    "NA05",  # 기타자연관광
+    "LS01",  # 육상레저스포츠
+    "LS02",  # 수상레저스포츠
+    "LS03",  # 항공레저스포츠
+    "HS01",  # 역사유적지
+    "VE02",  # 테마공원
+    "VE03",  # 도시공원
+    "AC05",  # 캠핑
 }
-INDOOR_CAT2 = {"A0206", "A0305"}  # 문화시설, 실내 레포츠 등
+INDOOR_LCLS2 = {"VE06", "VE07", "VE09"}  # 공연·전시·교육시설
 
 
 @dataclass(frozen=True)
@@ -97,22 +108,18 @@ def _response_items(payload: object, ctx: str) -> tuple[list[object], int]:
     return as_list(items, f"{ctx}.item"), total
 
 
-def _region_of(sigungu: str | None, addr: str | None) -> str:
-    if sigungu in SIGUNGU_REGION:
-        return SIGUNGU_REGION[sigungu]
+def _region_of(ldong_sgg: str | None, addr: str | None) -> str:
+    if ldong_sgg in LDONG_REGION:
+        return LDONG_REGION[ldong_sgg]
     if addr and "서귀포시" in addr:
         return "서귀포시"
     return "제주시"
 
 
-def _is_outdoor(cat1: str | None, cat2: str | None) -> bool | None:
-    if cat2 in OUTDOOR_CAT2:
+def _is_outdoor(lcls2: str | None) -> bool | None:
+    if lcls2 in OUTDOOR_LCLS2:
         return True
-    if cat2 in INDOOR_CAT2:
-        return False
-    if cat1 == "A01":
-        return True
-    if cat1 == "A02":
+    if lcls2 in INDOOR_LCLS2:
         return False
     return None
 
@@ -125,7 +132,7 @@ def fetch_spots(session: requests.Session, service_key: str) -> list[Spot]:
         fetched = 0
         while True:
             params = _base_params(service_key) | {
-                "areaCode": JEJU_AREA_CODE,
+                "lDongRegnCd": JEJU_LDONG_CODE,
                 "contentTypeId": type_id,
                 "numOfRows": str(NUM_ROWS),
                 "pageNo": str(page),
@@ -153,21 +160,20 @@ def fetch_spots(session: requests.Session, service_key: str) -> list[Spot]:
                     logger.warning("제주 좌표범위 밖 스킵: %s (%s, %s)", name, lat, lng)
                     continue
                 addr = _str_field(item, "addr1")
-                cat1 = _str_field(item, "cat1")
-                cat2 = _str_field(item, "cat2")
+                lcls2 = _str_field(item, "lclsSystm2")
                 spots.append(
                     Spot(
                         content_id=content_id,
                         content_type_id=type_id,
                         name=name,
-                        cat1=cat1,
-                        cat2=cat2,
-                        cat3=_str_field(item, "cat3"),
+                        cat1=_str_field(item, "lclsSystm1"),
+                        cat2=lcls2,
+                        cat3=_str_field(item, "lclsSystm3"),
                         lat=lat,
                         lng=lng,
                         addr=addr,
                         image_url=_str_field(item, "firstimage"),
-                        region=_region_of(_str_field(item, "sigungucode"), addr),
+                        region=_region_of(_str_field(item, "lDongSignguCd"), addr),
                     )
                 )
             fetched += len(items)
@@ -177,6 +183,10 @@ def fetch_spots(session: requests.Session, service_key: str) -> list[Spot]:
             page += 1
             time.sleep(DETAIL_DELAY_SEC)
     return spots
+
+
+class QuotaExceededError(RuntimeError):
+    """data.go.kr 일일 쿼터 소진(429) — 이후 detail 호출 중단."""
 
 
 def fetch_opening_hours(
@@ -191,6 +201,8 @@ def fetch_opening_hours(
         payload = get_json(session, f"{BASE_URL}/detailIntro2", params, log_params=log_params)
         items, _ = _response_items(payload, f"detailIntro2[{spot.content_id}]")
     except ExternalApiError as exc:
+        if "quota" in str(exc).lower() or "status=429" in str(exc):
+            raise QuotaExceededError(str(exc)) from exc
         logger.warning("운영시간 조회 실패(계속 진행): %s — %s", spot.name, exc)
         return None
     if not items:
@@ -209,14 +221,32 @@ def main() -> None:
     for s in spots:
         by_region[s.region] = by_region.get(s.region, 0) + 1
     logger.info("수집 스팟 %d건, 지역분포 %s", len(spots), by_region)
-    if len(spots) < 300:
-        raise RuntimeError(f"스팟 수가 비정상적으로 적음: {len(spots)} (기대 384+)")
+    if len(spots) < 700:
+        raise RuntimeError(f"스팟 수가 비정상적으로 적음: {len(spots)} (기대 ~800)")
+
+    db = SupabaseRest(settings.supabase_url, settings.supabase_service_role_key)
+    # 쿼터 소진 등으로 이번에 못 받은 운영시간은 기존 DB 값 보존
+    existing_hours: dict[str, str] = {}
+    for row in db.select_all("spots", {"select": "content_id,opening_hours"}):
+        cid, oh = row.get("content_id"), row.get("opening_hours")
+        if isinstance(cid, str) and isinstance(oh, str):
+            existing_hours[cid] = oh
 
     logger.info("운영시간 보강 시작 (%d건, detailIntro2)", len(spots))
     hours: dict[str, str | None] = {}
+    quota_hit = False
     for i, spot in enumerate(spots, 1):
-        hours[spot.content_id] = fetch_opening_hours(session, settings.data_go_kr_key, spot)
-        if i % 50 == 0:
+        if quota_hit:
+            hours[spot.content_id] = None
+            continue
+        try:
+            hours[spot.content_id] = fetch_opening_hours(session, settings.data_go_kr_key, spot)
+        except QuotaExceededError as exc:
+            quota_hit = True
+            hours[spot.content_id] = None
+            logger.warning("쿼터 소진 — 운영시간 보강 중단(%d/%d): %s", i, len(spots), exc)
+            continue
+        if i % 100 == 0:
             logger.info("운영시간 %d/%d", i, len(spots))
         time.sleep(DETAIL_DELAY_SEC)
 
@@ -230,14 +260,13 @@ def main() -> None:
             "lat": s.lat,
             "lng": s.lng,
             "addr": s.addr,
-            "opening_hours": hours.get(s.content_id),
+            "opening_hours": hours.get(s.content_id) or existing_hours.get(s.content_id),
             "image_url": s.image_url,
-            "is_outdoor": _is_outdoor(s.cat1, s.cat2),
+            "is_outdoor": _is_outdoor(s.cat2),
             "region": s.region,
         }
         for s in spots
     ]
-    db = SupabaseRest(settings.supabase_url, settings.supabase_service_role_key)
     inserted = db.insert("spots", rows, on_conflict="content_id")
     logger.info("spots 적재 완료: %d행", inserted)
 
