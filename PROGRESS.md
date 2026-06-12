@@ -3,38 +3,32 @@
 > 재부팅/새 세션 시 이 파일부터 읽으면 이어서 진행 가능.
 > 설계 = `BUILD_PLAN.md`. 자율 구현 지시서 = `FABLE_TASKS.md`.
 
-## 현재 단계
-**Fable 자율 구현 진행 중 (2026-06-13).** Phase 0.5 완료 → Phase 1 진행 중.
+## 현재 단계 (2026-06-13 새벽, Fable 자율 구현 완료)
+**Phase 0.5~5(준비) 전부 구현 완료. 남은 사람 단계 2개:**
+1. **Vercel 로그인** — `npx vercel login` 후 `scripts\deploy_vercel.ps1` 실행 (또는 vercel.com에서 GitHub repo `Yewon419/JejuNow` import + app/ 루트 지정 + NEXT_PUBLIC env 3종)
+2. **Kakao Web 플랫폼 도메인 등록** — `http://localhost` + Vercel 도메인 (지도 표시용. 미등록 시 앱은 리스트 폴백으로 동작)
 
-## Phase 0.5 — 스캐폴딩 ✅ (커밋 5e7c3c4)
-- 모노레포: `app/`(Next.js 15+TS+Tailwind) `api/`(FastAPI) `ml/` `db/migrations/`
-- `.venv` + ruff/mypy strict + tsc/eslint 게이트 전부 통과
-- git init + .gitignore (.env·data/raw 등 제외)
+## Phase별 결과
+- **0.5 스캐폴딩** ✅ 모노레포(app/api/ml/db) + ruff/mypy strict + tsc/eslint 게이트
+- **1 데이터** ✅ spots 801(lDongRegnCd=50, lcls 신분류) / spot_popularity 36,360행
+  (매핑 5패스: exact 160·prefix 6·contain 19·kakao 47 = **스팟 76.1%, 행 89.2%**, 미매핑 73스팟 → `db/spot_name_map.csv`)
+  / weather 101개월(ASOS 184) / visitors **skip**(공개 API 미확보)
+- **2 모델** ✅ LightGBM(타겟=인기점유율%): 검증(2025-07~2026-05) **MAE 0.423, MAPE 14.1%, top30 87.2%, bottom30 73.7%**.
+  day_profile 4,872행(lcls×요일×시간 휴리스틱). precompute **768,960행**(801스팟×2026-06-13~08-31×9~20시).
+  성산일출봉 sanity: 평일13시 74/토13시 100/18시 15 — 주말·일중 효과 정상
+- **3 백엔드** ✅ FastAPI `/spots /congestion /simulate /alternatives` 스모크 통과.
+  Railway 토큰 없음 → Dockerfile·railway.toml만 준비(§4 규약)
+- **4 프론트** ✅ 5화면(온보딩/대시보드/지도/일정/상세) + PWA + 프로덕션 빌드·로컬 SSR 200 확인.
+  Vercel 실배포만 로그인 대기
+- **5 셸** ✅(준비까지) Capacitor iOS 프로젝트 생성, GitHub Actions macOS 빌드 워크플로.
+  .ipa·TestFlight·심사 = 사람 단계 — **여기서 정지**
 
-## Phase 1 — 데이터 파이프라인 (진행 중)
-- ✅ Supabase 스키마 적용 (MCP `apply_migration`): spots, **spot_popularity**(R1 반영),
-  visitors, weather, day_profile, congestion_pred(+is_imputed), user_trips. RLS=읽기공개·쓰기차단
-- ✅ weather 101개월 적재 (ASOS 184 제주, 2018-01~2026-05). **기상청 키 게이트웨이 반영됨** — skip 불필요
-- 🔄 spots 재수집 중 (백그라운드)
-- ⬜ spot_popularity 재적재 (매핑 개선 후)
-- ❌ **visitors(월 입도객) skip** — 공개 API 미확보. 거시피처 없이 진행, 모델 note에 명시
-
-### 결정·발견 로그 (2026-06-13)
-1. **TourAPI areaCode=39는 불완전** — 비자림·오설록 등 신규등록 스팟은 legacy areacode 공란.
-   `lDongRegnCd=50`(법정동) 조회로 전환 → 관광지 568+문화시설 96+레포츠 139 = **803건** (기존 384+55+87=526).
-2. **카테고리 = 신분류 lclsSystm1~3** 채택 (803/803 채워짐, legacy cat은 526/803).
-   cat1~3 컬럼에 lcls 코드 저장. day_profile·is_outdoor 휴리스틱도 lcls 기준으로 재작성.
-3. **이름매핑 5패스**: 수동맵 → 정규화 일치 → 지역접두어 제거 → 유일 포함 → **Kakao Local 좌표 매칭**(300m).
-   첫 시도(정규화 일치만)는 스팟 34%/행 46.5%로 부족했음. 미매핑은 `db/spot_name_map.csv` 리포트.
-4. 데이터랩 long CSV의 age_group은 이미 `전체/20/30/40/50/60` 정규형 (첫 적재 시 83% 탈락 버그 수정).
-5. PowerShell `Select-Object -First`가 파이프라인 조기종료로 적재 중단시킴 — 백그라운드 실행+파일 로그로 전환.
-6. visitors: 데이터랩은 세션쿠키 필요(만료됨), 공공데이터포털 월 입도객 API 미신청 — **skip**.
-
-## Phase 2~5 계획 (FABLE_TASKS.md 참조)
-- Phase 2: ml/train(LightGBM, 타겟=인기점유율%), profile(일중 prior), precompute(2026-06-13~08-31, 9~20시)
-- Phase 3: FastAPI /spots /congestion /simulate /alternatives. Railway 토큰 없음 → 배포설정만
-- Phase 4: 5화면 + Kakao Map + Vercel 배포. ⚠️ Kakao Web 도메인 미등록 — 대표가 localhost+Vercel 도메인 등록 필요
-- Phase 5: Capacitor iOS 구성까지 하고 정지(사람 단계)
+## 운영 메모
+- **TourAPI 일일쿼터(1000회) 소진됨** — 운영시간 567/801만 확보. 자정 리셋 후
+  `python -m api.collectors.collect_spots` 재실행하면 나머지 보강(쿼터 fail-fast+기존값 보존 패치됨)
+- congestion_pred 호라이즌(2026-08-31) 만료 전 `ml.precompute` 재실행 필요 (앱 상수 `app/src/lib/constants.ts`도 동기)
+- GitHub: https://github.com/Yewon419/JejuNow (private)
+- 정직성: 타겟=점유율%(절대 검색량 아님), 시간대=월예측×휴리스틱 프로파일 합성, 실측 혼잡도 없음, is_imputed 표시 — UI·API·모델 note에 명시됨
 
 ## 키 보관
-`C:\Users\windg\Desktop\PROJECT\_keys\JejuNow\.env` (repo 밖). 전 키 검증 완료(기상청 포함).
+`C:\Users\windg\Desktop\PROJECT\_keys\JejuNow\.env` (repo 밖). 전 키 검증 완료.
