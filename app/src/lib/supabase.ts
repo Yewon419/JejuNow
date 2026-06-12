@@ -1,15 +1,18 @@
 // Supabase PostgREST 읽기 전용 클라이언트 (anon 키, RLS=select만 허용)
 import type { Congestion, Spot, WeatherMonth } from "./types";
 
-function env(name: string): string {
-  const value = process.env[name];
+// 직접 멤버 접근만 빌드타임 인라인됨 (process.env[동적키] 금지)
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+function env(value: string | undefined, name: string): string {
   if (!value) throw new Error(`환경변수 ${name} 누락 — app/.env.local 또는 Vercel env 확인`);
   return value;
 }
 
 async function rest<T>(path: string, revalidateSec: number): Promise<T> {
-  const base = env("NEXT_PUBLIC_SUPABASE_URL");
-  const key = env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const base = env(SUPABASE_URL, "NEXT_PUBLIC_SUPABASE_URL");
+  const key = env(SUPABASE_ANON_KEY, "NEXT_PUBLIC_SUPABASE_ANON_KEY");
   const res = await fetch(`${base}/rest/v1/${path}`, {
     headers: { apikey: key, Authorization: `Bearer ${key}` },
     next: { revalidate: revalidateSec },

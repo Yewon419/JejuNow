@@ -21,18 +21,21 @@ export function findAlternatives(
   for (const s of spots) {
     if (s.spot_id === origin.spot_id || s.cat2 !== origin.cat2) continue;
     const c = congestion.get(s.spot_id);
-    if (!c || c.level > 2) continue;
+    if (!c) continue;
     out.push({
       spot: s,
       congestion: c,
       distanceKm: Math.round(haversineKm(origin.lat, origin.lng, s.lat, s.lng) * 10) / 10,
     });
   }
-  out.sort(
+  // 동일 cat2 내 수요압력 하위 30% → 비추정·저압력·근거리 우선
+  out.sort((a, b) => a.congestion.pressure - b.congestion.pressure);
+  const bottom = out.slice(0, Math.max(1, Math.round(out.length * 0.3)));
+  bottom.sort(
     (a, b) =>
       Number(a.congestion.is_imputed) - Number(b.congestion.is_imputed) ||
       a.congestion.pressure - b.congestion.pressure ||
       a.distanceKm - b.distanceKm,
   );
-  return out.slice(0, max);
+  return bottom.slice(0, max);
 }

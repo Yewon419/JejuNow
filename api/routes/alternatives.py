@@ -41,8 +41,6 @@ def get_alternatives(
         if other_id == spot_id or meta.cat2 != origin.cat2:
             continue
         pred = predictor.slot(other_id, date, hour)
-        if pred.level > 2:  # 하위(여유) 후보만
-            continue
         candidates.append(
             AlternativeOut(
                 spot_id=other_id,
@@ -58,5 +56,8 @@ def get_alternatives(
                 distance_km=round(_haversine_km(origin.lat, origin.lng, meta.lat, meta.lng), 2),
             )
         )
-    candidates.sort(key=lambda c: (c.is_imputed, c.pressure, c.distance_km))
-    return candidates[:MAX_ALTERNATIVES]
+    # 동일 cat2 내 수요압력 하위 30% (BUILD_PLAN §5) → 비추정·저압력·근거리 우선
+    candidates.sort(key=lambda c: c.pressure)
+    bottom = candidates[: max(1, round(len(candidates) * 0.3))]
+    bottom.sort(key=lambda c: (c.is_imputed, c.pressure, c.distance_km))
+    return bottom[:MAX_ALTERNATIVES]
