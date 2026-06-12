@@ -1,0 +1,31 @@
+# iOS .ipa 클라우드 빌드 (BUILD_PLAN §R4 — Windows 환경 우회)
+# ⚠️ 실행 전제(사람 단계): Apple Developer 계정($99), 서명 인증서·프로비저닝 프로파일을
+#   리포지토리 시크릿(BUILD_CERTIFICATE_BASE64, P12_PASSWORD, PROVISION_PROFILE_BASE64,
+#   APPSTORE_API_KEY 등)으로 등록해야 한다. 등록 전까지 이 워크플로는 수동 트리거여도 실패함.
+name: ios-build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Install deps & sync Capacitor
+        working-directory: app
+        run: |
+          npm ci
+          npx cap sync ios
+      - name: Build archive (서명 시크릿 필요)
+        working-directory: app/ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/App.xcarchive archive \
+            CODE_SIGN_STYLE=Manual
+      # exportArchive·TestFlight 업로드 단계는 Apple Developer 등록 후 추가 (Phase 5 사람 단계)
