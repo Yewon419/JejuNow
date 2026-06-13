@@ -109,7 +109,8 @@ export function MapView({
               width: size,
               height: size,
               borderRadius: 9999,
-              border: "2px solid rgba(11,18,32,.8)",
+              border: "2px solid #ffffff",
+              boxShadow: "0 1px 4px rgb(16 33 58 / 0.35)",
               background: color,
               cursor: "pointer",
               display: "block",
@@ -142,7 +143,7 @@ export function MapView({
         />
       ) : null}
 
-      <header className="space-y-3 px-5 pb-3 pt-10">
+      <header className="space-y-3 bg-surface px-5 pb-3 pt-12 shadow-card">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-ink">혼잡도 지도</h1>
           <label className="flex cursor-pointer items-center gap-2 text-xs text-dim">
@@ -150,7 +151,7 @@ export function MapView({
               type="checkbox"
               checked={showImputed}
               onChange={(e) => setShowImputed(e.target.checked)}
-              className="h-4 w-4 accent-sky-400"
+              className="h-4 w-4 accent-primary"
             />
             추정치 포함
           </label>
@@ -166,7 +167,7 @@ export function MapView({
             min={HORIZON_START}
             max={HORIZON_END}
             onChange={(e) => setDate(e.target.value)}
-            className="rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink [color-scheme:dark]"
+            className="rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink shadow-card"
           />
           <div className="flex-1">
             <label htmlFor="map-hour" className="flex justify-between text-xs text-dim">
@@ -181,7 +182,7 @@ export function MapView({
               step={1}
               value={hour}
               onChange={(e) => setHour(Number(e.target.value))}
-              className="w-full accent-sky-400"
+              className="w-full accent-primary"
             />
           </div>
         </div>
@@ -258,7 +259,7 @@ export function MapView({
               )}
               <Link
                 href={`/spots/${selected.spot_id}`}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-deep"
+                className="rounded-lg bg-cta px-4 py-2 text-sm font-bold text-on-cta"
               >
                 상세 · 대안 보기
               </Link>

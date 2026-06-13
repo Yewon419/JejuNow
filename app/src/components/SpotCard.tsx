@@ -2,15 +2,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { catLabel } from "@/lib/constants";
 import type { Congestion, Spot } from "@/lib/types";
-import { LevelBadge, PressureBar } from "./LevelBadge";
+import { LevelBadge } from "./LevelBadge";
 
+/** 사진 중심 스팟 카드 (초안 톤: 흰 카드 + 둥근 이미지 + 다크 텍스트) */
 export function SpotCard({ spot, congestion }: { spot: Spot; congestion?: Congestion }) {
   return (
     <Link
       href={`/spots/${spot.spot_id}`}
-      className="group block overflow-hidden rounded-card border border-line bg-card transition-transform active:scale-[0.98]"
+      className="group block overflow-hidden rounded-card bg-card shadow-card transition-transform active:scale-[0.98]"
     >
-      <div className="relative h-36 w-full bg-surface">
+      <div className="relative h-40 w-full bg-line">
         {spot.image_url ? (
           <Image
             src={spot.image_url}
@@ -20,7 +21,7 @@ export function SpotCard({ spot, congestion }: { spot: Spot; congestion?: Conges
             className="object-cover"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-dim" aria-hidden>
+          <div className="flex h-full items-center justify-center text-dim/50" aria-hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-10 w-10">
               <path
                 strokeLinecap="round"
@@ -30,18 +31,17 @@ export function SpotCard({ spot, congestion }: { spot: Spot; congestion?: Conges
             </svg>
           </div>
         )}
-      </div>
-      <div className="space-y-2 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="truncate text-base font-semibold text-ink">{spot.name}</h3>
-            <p className="text-xs text-dim">
-              {spot.region} · {catLabel(spot.cat2)}
-            </p>
+        {congestion ? (
+          <div className="absolute left-3 top-3">
+            <LevelBadge level={congestion.level} imputed={congestion.is_imputed} />
           </div>
-          {congestion ? <LevelBadge level={congestion.level} imputed={congestion.is_imputed} /> : null}
-        </div>
-        {congestion ? <PressureBar pressure={congestion.pressure} level={congestion.level} /> : null}
+        ) : null}
+      </div>
+      <div className="p-4">
+        <h3 className="truncate text-base font-bold text-ink">{spot.name}</h3>
+        <p className="mt-0.5 text-xs text-dim">
+          {spot.region} · {catLabel(spot.cat2)}
+        </p>
       </div>
     </Link>
   );

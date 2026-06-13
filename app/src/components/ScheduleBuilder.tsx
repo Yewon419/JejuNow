@@ -13,7 +13,7 @@ import {
 } from "@/lib/constants";
 import { fetchCongestionClient } from "@/lib/supabaseClient";
 import type { Congestion, ScheduleSlot, Spot } from "@/lib/types";
-import { LevelBadge, PressureBar } from "./LevelBadge";
+import { LevelBadge, LevelDot, PressureBar } from "./LevelBadge";
 
 const STORAGE_KEY = "jejunow:schedule";
 
@@ -107,11 +107,11 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   }
 
   return (
-    <main className="space-y-6 px-5 pt-10">
+    <main className="space-y-6 px-5 pt-12">
       <header>
-        <h1 className="text-2xl font-bold text-ink">내 일정 시뮬레이션</h1>
+        <h1 className="text-2xl font-bold text-ink">내 여행</h1>
         <p className="mt-1 text-sm text-dim">
-          날짜와 스팟을 고르면 슬롯별 예측 혼잡도를 점검하고 대안을 제안합니다.
+          날짜와 스팟을 고르면 슬롯별 예측 혼잡도를 점검하고 대안을 제안해요.
         </p>
         <input
           type="date"
@@ -120,11 +120,14 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
           min={HORIZON_START}
           max={HORIZON_END}
           onChange={(e) => setDate(e.target.value)}
-          className="mt-3 rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink [color-scheme:dark]"
+          className="mt-3 rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink shadow-card"
         />
       </header>
 
-      <section aria-label="일정 슬롯" className="space-y-3">
+      <ol aria-label="일정 슬롯" className="relative space-y-3 pl-8">
+        {slots.length > 1 ? (
+          <span aria-hidden className="absolute bottom-5 left-[0.4375rem] top-5 w-0.5 bg-line" />
+        ) : null}
         {slots.map((slot) => {
           const spot = spotById.get(slot.spotId);
           if (!spot) return null;
@@ -133,10 +136,13 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
           const hourMap = congestionByHour.get(slot.hour) ?? new Map<number, Congestion>();
           const alternatives = crowded ? findAlternatives(spot, spots, hourMap, 3) : [];
           return (
+            <li key={slot.hour} className="relative">
+              <span className="absolute -left-8 top-4">
+                <LevelDot level={c?.level ?? 1} size={14} />
+              </span>
             <div
-              key={slot.hour}
-              className={`rounded-card border p-4 ${
-                crowded ? "border-lv4/50 bg-lv4/5" : "border-line bg-card"
+              className={`rounded-card p-4 shadow-card ${
+                crowded ? "bg-lv4/5 ring-1 ring-lv4/30" : "bg-card"
               }`}
             >
               <div className="flex items-center justify-between gap-3">
@@ -145,7 +151,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                     aria-label="시간 변경"
                     value={slot.hour}
                     onChange={(e) => changeHour(slot.hour, Number(e.target.value))}
-                    className="rounded-lg border border-line bg-surface px-2 py-1.5 text-sm font-semibold text-ink"
+                    className="rounded-lg border border-line bg-bg px-2 py-1.5 text-sm font-semibold text-ink"
                   >
                     {Array.from({ length: HOUR_MAX - HOUR_MIN + 1 }, (_, i) => HOUR_MIN + i).map(
                       (h) => (
@@ -180,7 +186,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                 </div>
               ) : null}
               {crowded ? (
-                <div className="mt-3 space-y-2 rounded-xl bg-surface p-3">
+                <div className="mt-3 space-y-2 rounded-xl bg-bg p-3">
                   <p className="text-xs font-semibold text-lv3">
                     이 시간대는 붐빌 것으로 예측돼요. 같은 카테고리의 한적한 대안:
                   </p>
@@ -214,17 +220,18 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                 </div>
               ) : null}
             </div>
+            </li>
           );
         })}
 
         <button
           type="button"
           onClick={() => setPicker({ open: true, forHour: null })}
-          className="w-full cursor-pointer rounded-card border border-dashed border-line py-4 text-sm font-semibold text-dim transition-colors hover:border-primary hover:text-primary"
+          className="relative w-full cursor-pointer rounded-card border border-dashed border-line bg-card/50 py-4 text-sm font-semibold text-dim transition-colors hover:border-primary hover:text-primary"
         >
           + 스팟 추가
         </button>
-      </section>
+      </ol>
 
       {picker.open ? (
         <div
@@ -253,7 +260,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
               placeholder="스팟 이름 검색 (예: 성산일출봉)"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="mb-3 w-full rounded-lg border border-line bg-card px-3 py-2.5 text-sm text-ink placeholder:text-dim"
+              className="mb-3 w-full rounded-lg border border-line bg-bg px-3 py-2.5 text-sm text-ink placeholder:text-dim"
             />
             <ul className="space-y-1.5 pb-6">
               {filteredSpots.map((s) => (
@@ -261,7 +268,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                   <button
                     type="button"
                     onClick={() => addSlot(s.spot_id)}
-                    className="w-full cursor-pointer rounded-xl border border-line bg-card p-3 text-left hover:border-primary"
+                    className="w-full cursor-pointer rounded-xl border border-line bg-bg p-3 text-left hover:border-primary"
                   >
                     <span className="block text-sm font-semibold text-ink">{s.name}</span>
                     <span className="text-xs text-dim">

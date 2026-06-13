@@ -11,12 +11,12 @@ export const LEVEL_LABEL: Record<number, string> = {
   4: "혼잡",
 };
 
-// 여유(청록) → 혼잡(레드) 그라데이션
+// 여유(에메랄드) → 혼잡(레드). 라이트 배경 대비 검증값 (globals.css와 동기)
 export const LEVEL_COLOR: Record<number, string> = {
-  1: "#2dd4bf",
-  2: "#facc15",
-  3: "#fb923c",
-  4: "#f43f5e",
+  1: "#0fae87",
+  2: "#e0a020",
+  3: "#f06f24",
+  4: "#e23b54",
 };
 
 export const CAT_LABEL: Record<string, string> = {

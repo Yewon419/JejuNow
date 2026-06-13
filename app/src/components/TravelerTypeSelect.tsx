@@ -3,72 +3,64 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+// 초안 톤: 큰 사진 카드 2장(즉흥=노을 / 계획=밤하늘). 실사진 부재로 그라데이션으로 분위기 표현.
 const TYPES = [
   {
     id: "spontaneous",
+    eyebrow: "지금 떠나 볼까요?",
     title: "즉흥 여행자",
-    desc: "지금 가까운 한적한 곳부터 보여주세요",
+    desc: "지금 가까운 한적한 곳부터",
+    href: "/dashboard",
+    gradient: "linear-gradient(135deg, #f59e0b 0%, #ef4444 55%, #7c2d12 100%)",
   },
   {
     id: "planner",
+    eyebrow: "여행을 계획 중이라면",
     title: "계획 여행자",
-    desc: "날짜별 일정의 혼잡도를 미리 점검할래요",
+    desc: "날짜별 일정 혼잡도를 미리",
+    href: "/schedule",
+    gradient: "linear-gradient(135deg, #1e3a8a 0%, #0f172a 70%, #020617 100%)",
   },
 ] as const;
 
 export function TravelerTypeSelect() {
   const router = useRouter();
-  const [selected, setSelected] = useState<string>("spontaneous");
+  const [pending, setPending] = useState<string | null>(null);
 
-  function start() {
+  function choose(id: string, href: string) {
+    setPending(id);
     try {
-      localStorage.setItem("jejunow:travelerType", selected);
+      localStorage.setItem("jejunow:travelerType", id);
     } catch {
       // 프라이빗 모드 등 저장 불가 시에도 진행
     }
-    router.push(selected === "planner" ? "/schedule" : "/dashboard");
+    router.push(href);
   }
 
   return (
-    <section className="relative space-y-3" aria-label="여행자 타입 선택">
-      {TYPES.map((t) => {
-        const active = selected === t.id;
-        return (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setSelected(t.id)}
-            aria-pressed={active}
-            className={`w-full cursor-pointer rounded-card border p-4 text-left transition-all duration-200 ${
-              active
-                ? "border-primary bg-primary/10"
-                : "border-line bg-card hover:border-dim"
-            }`}
-          >
-            <span className="flex items-center justify-between">
-              <span>
-                <span className="block text-base font-semibold text-ink">{t.title}</span>
-                <span className="mt-1 block text-sm text-dim">{t.desc}</span>
-              </span>
-              <span
-                aria-hidden
-                className={`ml-3 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
-                  active ? "border-primary" : "border-line"
-                }`}
-              >
-                {active ? <span className="h-2.5 w-2.5 rounded-full bg-primary" /> : null}
-              </span>
+    <section className="my-8 flex-1 space-y-4" aria-label="여행자 타입 선택">
+      {TYPES.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          onClick={() => choose(t.id, t.href)}
+          aria-busy={pending === t.id}
+          className="relative block h-44 w-full cursor-pointer overflow-hidden rounded-card text-left shadow-card transition-transform active:scale-[0.98]"
+          style={{ background: t.gradient }}
+        >
+          <span className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" aria-hidden />
+          <span className="absolute inset-x-0 bottom-0 p-5">
+            <span className="block text-xs font-medium text-white/80">{t.eyebrow}</span>
+            <span className="mt-1 flex items-center gap-2 text-2xl font-bold text-white">
+              {t.title}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} className="h-5 w-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+              </svg>
             </span>
-          </button>
-        );
-      })}
-      <button
-        type="button"
-        onClick={start}
-        className="mt-2 w-full cursor-pointer rounded-card bg-primary py-4 text-base font-bold text-deep transition-transform active:scale-[0.98]"
-      >
-        시작하기
-      </button>
+            <span className="mt-1 block text-sm text-white/85">{t.desc}</span>
+          </span>
+        </button>
+      ))}
     </section>
   );
 }

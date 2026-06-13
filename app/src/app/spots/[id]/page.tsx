@@ -40,7 +40,7 @@ export default async function SpotDetailPage({
 
   return (
     <main className="mx-auto min-h-dvh max-w-xl pb-12">
-      <div className="relative h-60 w-full bg-surface">
+      <div className="relative h-72 w-full bg-line">
         {spot.image_url ? (
           <Image
             src={spot.image_url}
@@ -51,11 +51,11 @@ export default async function SpotDetailPage({
             priority
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-bg to-transparent" />
         <Link
           href="/dashboard"
           aria-label="뒤로"
-          className="absolute left-4 top-4 rounded-full border border-line bg-bg/70 p-2 text-ink backdrop-blur"
+          className="absolute left-4 top-12 rounded-full bg-black/35 p-2 text-white backdrop-blur transition-colors hover:bg-black/50"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
@@ -63,7 +63,7 @@ export default async function SpotDetailPage({
         </Link>
       </div>
 
-      <div className="space-y-8 px-5 pt-2">
+      <div className="relative -mt-6 space-y-8 rounded-t-3xl bg-bg px-5 pt-6">
         <header>
           <p className="text-xs font-medium tracking-wide text-primary">
             {spot.region} · {catLabel(spot.cat2)}
@@ -103,13 +103,13 @@ export default async function SpotDetailPage({
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 {calmHour ? (
-                  <div className="rounded-card border border-line bg-card p-3">
+                  <div className="rounded-card bg-card p-3 shadow-card">
                     <p className="text-xs text-dim">가장 한적</p>
                     <p className="mt-1 font-bold text-lv1">{calmHour.hour}시</p>
                   </div>
                 ) : null}
                 {peak ? (
-                  <div className="rounded-card border border-line bg-card p-3">
+                  <div className="rounded-card bg-card p-3 shadow-card">
                     <p className="text-xs text-dim">가장 붐빔</p>
                     <p className="mt-1 font-bold text-lv4">{peak.hour}시</p>
                   </div>
@@ -117,7 +117,7 @@ export default async function SpotDetailPage({
               </div>
             </>
           ) : (
-            <p className="rounded-card border border-line bg-card p-4 text-sm text-dim">
+            <p className="rounded-card bg-card p-4 text-sm text-dim shadow-card">
               이 날짜의 예측 데이터가 없습니다.
             </p>
           )}
@@ -135,9 +135,14 @@ export default async function SpotDetailPage({
               <li key={alt.spot.spot_id}>
                 <Link
                   href={`/spots/${alt.spot.spot_id}`}
-                  className="flex items-center justify-between gap-3 rounded-card border border-line bg-card p-4 transition-colors hover:border-primary"
+                  className="flex items-center gap-3 overflow-hidden rounded-card bg-card p-2.5 shadow-card transition-transform active:scale-[0.99]"
                 >
-                  <div className="min-w-0">
+                  <span
+                    className="h-14 w-14 shrink-0 rounded-xl bg-line bg-cover bg-center"
+                    style={alt.spot.image_url ? { backgroundImage: `url(${alt.spot.image_url})` } : undefined}
+                    aria-hidden
+                  />
+                  <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-ink">{alt.spot.name}</p>
                     <p className="text-xs text-dim">
                       {alt.spot.region} · {alt.distanceKm}km
@@ -148,7 +153,7 @@ export default async function SpotDetailPage({
               </li>
             ))}
             {alternatives.length === 0 ? (
-              <li className="rounded-card border border-line bg-card p-4 text-sm text-dim">
+              <li className="rounded-card bg-card p-4 text-sm text-dim shadow-card">
                 같은 카테고리의 한적한 대안을 찾지 못했어요.
               </li>
             ) : null}
@@ -157,7 +162,7 @@ export default async function SpotDetailPage({
 
         <Link
           href="/schedule"
-          className="block w-full rounded-card bg-primary py-4 text-center text-base font-bold text-deep transition-transform active:scale-[0.98]"
+          className="block w-full rounded-card bg-cta py-4 text-center text-base font-bold text-on-cta transition-transform active:scale-[0.98]"
         >
           일정에 넣고 혼잡도 점검하기
         </Link>
