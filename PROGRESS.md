@@ -3,10 +3,21 @@
 > 재부팅/새 세션 시 이 파일부터 읽으면 이어서 진행 가능.
 > 설계 = `BUILD_PLAN.md`. 자율 구현 지시서 = `FABLE_TASKS.md`.
 
-## 현재 단계 (2026-06-13 새벽, Fable 자율 구현 완료)
-**Phase 0.5~5(준비) 전부 구현 완료. 남은 사람 단계 2개:**
-1. **Vercel 로그인** — `npx vercel login` 후 `scripts\deploy_vercel.ps1` 실행 (또는 vercel.com에서 GitHub repo `Yewon419/JejuNow` import + app/ 루트 지정 + NEXT_PUBLIC env 3종)
-2. **Kakao Web 플랫폼 도메인 등록** — `http://localhost` + Vercel 도메인 (지도 표시용. 미등록 시 앱은 리스트 폴백으로 동작)
+## 현재 단계 (2026-06-13, Fable 자율 구현 + Vercel 배포 완료)
+**웹데모 라이브: https://jejunow.vercel.app** (전 페이지 200, 실데이터 렌더 확인)
+**남은 사람 단계 1개:**
+1. **Kakao Web 플랫폼 도메인 등록** — developers.kakao.com → 내 앱 → 플랫폼 → Web →
+   `https://jejunow.vercel.app` + `http://localhost:3000` 등록해야 **지도 마커가 표시**됨.
+   미등록 시 지도 화면은 리스트 폴백으로 동작(앱 자체는 정상).
+   (이후 iOS 스토어 제출 = Phase 5 사람 단계: Apple $99·심사)
+
+### 배포 메모 (2026-06-13)
+- Vercel 프로젝트 `yewon419s-projects/jejunow`, 도메인 `jejunow.vercel.app`
+- **함정 1**: `값 | npx vercel env add` 파이프가 env 값을 오염(40자→1104자)시켜 500 유발.
+  → API(`POST /v10/projects/{id}/env`)로 등록해야 함. `scripts\deploy_vercel.ps1`이 API 방식으로 수정됨
+- **함정 2**: 새 프로젝트 기본 Deployment Protection(SSO) → 401. API로 `ssoProtection:null` 해제
+- Node 22.x 고정(로컬 검증 버전). NEXT_PUBLIC은 빌드타임 인라인이라 env 변경 후 재배포 필수
+- 재배포: `powershell -File scripts\deploy_vercel.ps1` (login 상태에서)
 
 ## Phase별 결과
 - **0.5 스캐폴딩** ✅ 모노레포(app/api/ml/db) + ruff/mypy strict + tsc/eslint 게이트
