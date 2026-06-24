@@ -3,13 +3,24 @@
 > 재부팅/새 세션 시 이 파일부터 읽으면 이어서 진행 가능.
 > 설계 = `BUILD_PLAN.md`. 자율 구현 지시서 = `FABLE_TASKS.md`.
 
-## 현재 단계 (2026-06-13, Fable 자율 구현 + Vercel 배포 완료)
+## 현재 단계 (2026-06-24 기준, 웹데모 배포 + 초안 디자인 반영 완료)
 **웹데모 라이브: https://jejunow.vercel.app** (전 페이지 200, 실데이터 렌더 확인)
-**남은 사람 단계 1개:**
+**남은 사람 단계 (새 세션에서 진행 예정):**
 1. **Kakao Web 플랫폼 도메인 등록** — developers.kakao.com → 내 앱 → 플랫폼 → Web →
    `https://jejunow.vercel.app` + `http://localhost:3000` 등록해야 **지도 마커가 표시**됨.
    미등록 시 지도 화면은 리스트 폴백으로 동작(앱 자체는 정상).
-   (이후 iOS 스토어 제출 = Phase 5 사람 단계: Apple $99·심사)
+2. **(선택) 온보딩 실사진 교체** — 현재 즉흥=노을/계획=밤하늘 그라데이션으로 대체 중.
+   실제 제주 사진 받으면 `TravelerTypeSelect.tsx`의 gradient → 이미지로 교체 가능.
+3. **(나중) iOS 스토어 제출** = Phase 5 사람 단계: Apple Developer $99·심사. `app/ios/` + `.github/workflows/ios-build.yml` 준비됨
+
+### 디자인 (2026-06-24, 제안서 초안 반영 완료)
+- 제안서 PDF 5p 목업 기준 **다크 네이비 → 라이트 테마** 전면 전환 (커밋 `3185393`)
+- 토큰: `app/src/app/globals.css` (흰 배경/카드 #f4f6f9·#fff, 다크텍스트 #16213a, primary 틸 #0e7d8c, CTA 다크 #16213a, 혼잡 lv1~4 라이트 대비값)
+- 온보딩: 큰 사진카드 2장(즉흥 노을/계획 밤하늘 그라데이션) — `TravelerTypeSelect.tsx`
+- 대시보드: 붐비는 곳 2카드 → 큰 추천코스 카드(`FeatureCourseCard.tsx`) → 한적 그리드
+- 일정: 세로 타임라인(연결선+컬러점) — `ScheduleBuilder.tsx`, `LevelDot` 추가
+- 상세: 풀폭 히어로+둥근 시트+대안 썸네일 카드. 지도: 흰 시트·흰테두리 마커
+- ⚠️ 다음 비주얼 변경 시 globals.css 토큰만 고치면 전 화면 반영됨
 
 ### 배포 메모 (2026-06-13)
 - Vercel 프로젝트 `yewon419s-projects/jejunow`, 도메인 `jejunow.vercel.app`
@@ -29,8 +40,7 @@
   성산일출봉 sanity: 평일13시 74/토13시 100/18시 15 — 주말·일중 효과 정상
 - **3 백엔드** ✅ FastAPI `/spots /congestion /simulate /alternatives` 스모크 통과.
   Railway 토큰 없음 → Dockerfile·railway.toml만 준비(§4 규약)
-- **4 프론트** ✅ 5화면(온보딩/대시보드/지도/일정/상세) + PWA + 프로덕션 빌드·로컬 SSR 200 확인.
-  Vercel 실배포만 로그인 대기
+- **4 프론트** ✅ 5화면(온보딩/대시보드/지도/일정/상세) + PWA + Vercel 배포 완료 + 초안 라이트 디자인 반영
 - **5 셸** ✅(준비까지) Capacitor iOS 프로젝트 생성, GitHub Actions macOS 빌드 워크플로.
   .ipa·TestFlight·심사 = 사람 단계 — **여기서 정지**
 
