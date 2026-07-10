@@ -1,0 +1,30 @@
+# congestion_pred 롤링 재계산 — KST 오늘 +45일을 매주 upsert (ml/precompute.py)
+# 프론트는 +30일만 노출하므로 주 1회 지연까지 데이터 공백 없음.
+# 시크릿: config.py의 6개 환경변수 전부 (load_settings가 all-or-nothing)
+name: precompute
+
+on:
+  schedule:
+    - cron: "30 0 * * 1" # 매주 월 00:30 UTC = 09:30 KST
+  workflow_dispatch:
+
+jobs:
+  precompute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install deps (api/Dockerfile과 동일 목록)
+        run: pip install fastapi uvicorn requests pandas lightgbm python-dotenv holidays
+      - name: Run precompute
+        env:
+          DATA_GO_KR_SERVICE_KEY_DECODING: ${{ secrets.DATA_GO_KR_SERVICE_KEY_DECODING }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          KAKAO_JS_KEY: ${{ secrets.KAKAO_JS_KEY }}
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+        run: python -m ml.precompute

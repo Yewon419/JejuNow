@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from api.deps import get_predictor
+from api.deps import get_spot_meta
 from api.schemas import SpotOut
 
 router = APIRouter()
@@ -12,7 +12,7 @@ router = APIRouter()
 
 @router.get("/spots", response_model=list[SpotOut])
 def list_spots() -> list[SpotOut]:
-    predictor = get_predictor()
+    spots = get_spot_meta()
     return [
         SpotOut(
             spot_id=m.spot_id,
@@ -27,5 +27,5 @@ def list_spots() -> list[SpotOut]:
             is_outdoor=m.is_outdoor,
             region=m.region,
         )
-        for m in predictor.spots.values()
+        for m in spots.values()
     ]

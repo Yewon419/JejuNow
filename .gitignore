@@ -21,8 +21,7 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 
-# ML 산출물
-ml/artifacts/
+# ML 산출물 — ml/artifacts는 커밋한다(Actions precompute·Docker 빌드가 모델 2MB를 필요로 함)
 
 # iOS / Capacitor
 *.ipa

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { findAlternatives } from "@/lib/alternatives";
+import { type Alternative, findAlternatives } from "@/lib/alternatives";
+import { fetchAlternativesLive, simulateSchedule } from "@/lib/api";
 import {
   HORIZON_END,
   HORIZON_START,
@@ -28,6 +29,9 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   const [picker, setPicker] = useState<SpotPicker>({ open: false, forHour: null });
   const [query, setQuery] = useState("");
   const [loaded, setLoaded] = useState(false);
+  // 라이브 추론(/simulate) 결과 — null이면 precompute(congestionByHour)로 폴백
+  const [liveByHour, setLiveByHour] = useState<Map<number, Map<number, Congestion>> | null>(null);
+  const [liveAlts, setLiveAlts] = useState<Map<string, Alternative[]>>(new Map());
 
   const spotById = useMemo(() => new Map(spots.map((s) => [s.spot_id, s])), [spots]);
 
@@ -78,6 +82,30 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
       cancelled = true;
     };
   }, [date, slots]);
+
+  // 라이브 추론 — 성공 시 precompute 값 대신 사용, 슬립·미배포 시 조용히 폴백
+  useEffect(() => {
+    let cancelled = false;
+    simulateSchedule(date, slots).then(async (live) => {
+      if (cancelled) return;
+      setLiveByHour(live);
+      const alts = new Map<string, Alternative[]>();
+      if (live) {
+        const crowded = slots.filter((s) => (live.get(s.hour)?.get(s.spotId)?.level ?? 1) >= 3);
+        await Promise.all(
+          crowded.map(async (s) => {
+            const found = await fetchAlternativesLive(s.spotId, date, s.hour, spotById);
+            if (found) alts.set(`${s.hour}:${s.spotId}`, found);
+          }),
+        );
+      }
+      if (cancelled) return;
+      setLiveAlts(alts);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [date, slots, spotById]);
 
   const filteredSpots = useMemo(() => {
     const q = query.trim();
@@ -131,10 +159,15 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
         {slots.map((slot) => {
           const spot = spotById.get(slot.spotId);
           if (!spot) return null;
-          const c = congestionByHour.get(slot.hour)?.get(slot.spotId);
+          const c =
+            liveByHour?.get(slot.hour)?.get(slot.spotId) ??
+            congestionByHour.get(slot.hour)?.get(slot.spotId);
           const crowded = c ? c.level >= 3 : false;
           const hourMap = congestionByHour.get(slot.hour) ?? new Map<number, Congestion>();
-          const alternatives = crowded ? findAlternatives(spot, spots, hourMap, 3) : [];
+          const alternatives = crowded
+            ? (liveAlts.get(`${slot.hour}:${slot.spotId}`)?.slice(0, 3) ??
+              findAlternatives(spot, spots, hourMap, 3))
+            : [];
           return (
             <li key={slot.hour} className="relative">
               <span className="absolute -left-8 top-4">

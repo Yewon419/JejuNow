@@ -123,3 +123,9 @@ class SupabaseRest:
     def delete_all(self, table: str, key_col: str) -> None:
         """테이블 전체 삭제 (재적재용). PostgREST는 필터 필수라 not.is.null 사용."""
         self._request("DELETE", table, params={key_col: "not.is.null"})
+
+    def delete_where(self, table: str, params: dict[str, str]) -> None:
+        """조건부 삭제 (롤링 호라이즌 과거분 정리용). params는 PostgREST 필터."""
+        if not params:
+            raise SupabaseRestError(f"{table} DELETE: 빈 필터 금지 — delete_all을 사용할 것")
+        self._request("DELETE", table, params=params)

@@ -1,0 +1,21 @@
+# Supabase 무료 티어 일시정지 방지 백업 — 실제 DB 쿼리만 활동으로 집계됨
+# (1차 방어는 UptimeRobot → Render /keepalive. 이 워크플로는 이중 방어)
+name: keepalive
+
+on:
+  schedule:
+    - cron: "0 1 * * 1,4" # 매주 월·목 01:00 UTC
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Query Supabase (DB activity)
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/spots?select=spot_id&limit=1")
+          echo "status=$code"
+          test "$code" = "200"

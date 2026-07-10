@@ -1,0 +1,29 @@
+# TourAPI 스팟 메타·운영시간 주간 동기화 (api/collectors/collect_spots.py)
+# 일일쿼터(1000회) 리셋이 KST 자정이라 직후에 실행 — 미확보 운영시간 보강 포함
+name: collect-spots
+
+on:
+  schedule:
+    - cron: "10 15 * * 2" # 매주 화 15:10 UTC = 수 00:10 KST (쿼터 리셋 직후)
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install deps (api/Dockerfile과 동일 목록)
+        run: pip install fastapi uvicorn requests pandas lightgbm python-dotenv holidays
+      - name: Run collect_spots
+        env:
+          DATA_GO_KR_SERVICE_KEY_DECODING: ${{ secrets.DATA_GO_KR_SERVICE_KEY_DECODING }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          KAKAO_JS_KEY: ${{ secrets.KAKAO_JS_KEY }}
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+        run: python -m api.collectors.collect_spots

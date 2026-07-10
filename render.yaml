@@ -1,0 +1,26 @@
+# Render Blueprint — FastAPI 무료 배포 (Railway 대체: 무료 티어 없음 → $5/월 고정이라 탈락)
+# 무료 티어 제약: 512MB/0.1CPU, 15분 무활동 슬립(UptimeRobot 핑으로 워밍),
+#   월 750 인스턴스 시간 = 상시 서비스 1개만. 워크스페이스에 다른 무료 서비스 배포 금지.
+# 헬스체크는 DB 무관 /health (Supabase 순단 시 재시작 루프 방지) —
+#   Supabase 활동 유지는 UptimeRobot이 /keepalive(DB 쿼리 포함)를 핑.
+services:
+  - name: jejunow-api
+    type: web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: DATA_GO_KR_SERVICE_KEY_DECODING
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: KAKAO_JS_KEY
+        sync: false
+      - key: KAKAO_REST_API_KEY
+        sync: false

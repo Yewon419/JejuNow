@@ -1,6 +1,16 @@
 // 사전계산(congestion_pred) 호라이즌 — ml/precompute.py와 동기 유지
-export const HORIZON_START = "2026-06-13";
-export const HORIZON_END = "2026-08-31";
+// precompute는 KST 오늘 +45일 롤링 적재. 프론트는 +30일만 노출해
+// 주 1회 재실행 지연(최대 7일)을 흡수한다 (45 - 7 > 30, 항상 데이터 보장)
+const HORIZON_EXPOSE_DAYS = 30;
+
+function kstDateStr(offsetDays: number): string {
+  const kst = new Date(Date.now() + 9 * 3600 * 1000);
+  kst.setUTCDate(kst.getUTCDate() + offsetDays);
+  return kst.toISOString().slice(0, 10);
+}
+
+export const HORIZON_START = kstDateStr(0);
+export const HORIZON_END = kstDateStr(HORIZON_EXPOSE_DAYS);
 export const HOUR_MIN = 9;
 export const HOUR_MAX = 20;
 

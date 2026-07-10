@@ -1,0 +1,63 @@
+{
+  "feature_columns": [
+    "month",
+    "quarter",
+    "is_peak",
+    "holiday_count",
+    "lag_1m",
+    "lag_3m",
+    "lag_12m",
+    "rolling_mean_3m",
+    "rolling_mean_6m",
+    "avg_temp",
+    "precip_mm",
+    "is_outdoor",
+    "cat",
+    "region_code",
+    "age_group"
+  ],
+  "categorical_levels": {
+    "cat": [
+      "DL_관광명소",
+      "DL_교통시설",
+      "DL_농/어업",
+      "DL_레저/스포츠",
+      "DL_문화생활시설",
+      "DL_종교",
+      "EX03",
+      "EX05",
+      "EX06",
+      "EX07",
+      "HS01",
+      "HS03",
+      "LS01",
+      "LS02",
+      "LS04",
+      "NA01",
+      "NA02",
+      "NA03",
+      "NA04",
+      "NA05",
+      "VE01",
+      "VE02",
+      "VE03",
+      "VE04",
+      "VE05",
+      "VE06",
+      "VE07",
+      "VE10"
+    ],
+    "region_code": [
+      "50110",
+      "50130"
+    ],
+    "age_group": [
+      "20",
+      "30",
+      "40",
+      "50",
+      "60",
+      "전체"
+    ]
+  }
+}

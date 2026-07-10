@@ -1,8 +1,0 @@
-# Railway 배포 설정 — 계정 토큰 미보유로 실배포는 대기 (FABLE_TASKS §4)
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "api/Dockerfile"
-
-[deploy]
-healthcheckPath = "/health"
-restartPolicyType = "ON_FAILURE"

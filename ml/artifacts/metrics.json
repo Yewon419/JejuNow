@@ -1,0 +1,10 @@
+{
+  "mae": 0.4232,
+  "mape_pct": 14.07,
+  "top30_precision": 0.8721,
+  "bottom30_precision": 0.7374,
+  "n_train": 32400,
+  "n_valid": 3960,
+  "best_iteration": 351,
+  "note": "타겟=데이터랩 인기 점유율%(수요 프록시). 절대 검색량·실측 혼잡도 아님. 검증=2025-07~2026-05 hold-out. visitors 거시피처 미확보로 제외."
+}
