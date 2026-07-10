@@ -1,17 +1,31 @@
 # JejuNow 진행상황 (재개용)
 
 > 재부팅/새 세션 시 이 파일부터 읽으면 이어서 진행 가능.
-> 설계 = `BUILD_PLAN.md`. 자율 구현 지시서 = `FABLE_TASKS.md`.
+> 설계 = `BUILD_PLAN.md` + **설계 v2(2026-07-10, 아래)**. 자율 구현 지시서 = `FABLE_TASKS.md`.
 
-## 현재 단계 (2026-06-24 기준, 웹데모 배포 + 초안 디자인 반영 완료)
-**웹데모 라이브: https://jejunow.vercel.app** (전 페이지 200, 실데이터 렌더 확인)
-**남은 사람 단계 (새 세션에서 진행 예정):**
-1. **Kakao Web 플랫폼 도메인 등록** — developers.kakao.com → 내 앱 → 플랫폼 → Web →
-   `https://jejunow.vercel.app` + `http://localhost:3000` 등록해야 **지도 마커가 표시**됨.
-   미등록 시 지도 화면은 리스트 폴백으로 동작(앱 자체는 정상).
-2. **(선택) 온보딩 실사진 교체** — 현재 즉흥=노을/계획=밤하늘 그라데이션으로 대체 중.
-   실제 제주 사진 받으면 `TravelerTypeSelect.tsx`의 gradient → 이미지로 교체 가능.
-3. **(나중) iOS 스토어 제출** = Phase 5 사람 단계: Apple Developer $99·심사. `app/ios/` + `.github/workflows/ios-build.yml` 준비됨
+## 현재 단계 (2026-07-10, 설계 v2 Phase 0~2 코드 완료 — 사람 단계 대기)
+
+**⚠ 웹데모 반파 상태**: Supabase 무료 티어 일시정지(06-24 이후 무활동)로 `/map`·`/schedule` 500.
+공모전 일정 = 개발 5~9월 → **심사 10~11월** — 심사 시점 무중단이 v2 설계의 1순위 목표.
+
+**설계 v2 반영분 (커밋 bf32d38, gate PASS)**
+- precompute 롤링(KST 오늘+45일)·upsert 전환, 프론트 호라이즌 동적(+30일)
+- `congestion_pred (date,hour)` 인덱스 마이그레이션 0003 — **DB 복구 후 적용 필요**
+- Actions 3종(precompute/collect-spots/keepalive) + repo 시크릿 6종 등록됨
+- `/keepalive`(DB 쿼리 — Supabase 일시정지 방지), `/spots` 모델 결합 제거
+- 프론트 `/simulate`·`/alternatives` 라이브 연결 + Supabase 폴백 (`app/src/lib/api.ts`)
+- Railway 탈락($5/월 고정) → `render.yaml`(무료) + UptimeRobot 5분 핑 전략
+
+**남은 사람 단계 (순서대로):**
+1. **Supabase restore** — supabase.com 로그인 → 프로젝트 `vuneeprkjcaxhdhgwcva` → Restore.
+   이후 자동 작업 재개 가능(마이그레이션 0003 적용 → precompute 재실행 → 라우트 200 검증).
+2. **Kakao Web 플랫폼 도메인 등록** — developers.kakao.com → 내 앱 → 플랫폼 → Web →
+   `https://jejunow.vercel.app` + `http://localhost:3000` (지도 마커 표시용).
+3. **Render 배포** — render.com 가입/로그인 → New Blueprint → repo 연결(render.yaml 자동 인식)
+   → env 6종 입력(_keys\JejuNow\.env) → 배포 URL을 Vercel env `NEXT_PUBLIC_API_URL`로 등록.
+4. **UptimeRobot** — 무료 가입 → HTTP 모니터 `https://<render-url>/keepalive` 5분 간격.
+5. (선택) 온보딩 실사진 교체 — `TravelerTypeSelect.tsx` gradient → 이미지.
+6. (나중) iOS 스토어 제출 — Apple Developer $99·심사. `app/ios/` + `ios-build.yml` 준비됨.
 
 ### 디자인 (2026-06-24, 제안서 초안 반영 완료)
 - 제안서 PDF 5p 목업 기준 **다크 네이비 → 라이트 테마** 전면 전환 (커밋 `3185393`)
@@ -47,7 +61,8 @@
 ## 운영 메모
 - **TourAPI 일일쿼터(1000회) 소진됨** — 운영시간 567/801만 확보. 자정 리셋 후
   `python -m api.collectors.collect_spots` 재실행하면 나머지 보강(쿼터 fail-fast+기존값 보존 패치됨)
-- congestion_pred 호라이즌(2026-08-31) 만료 전 `ml.precompute` 재실행 필요 (앱 상수 `app/src/lib/constants.ts`도 동기)
+- congestion_pred 호라이즌: **주간 Actions(precompute.yml)가 KST 오늘+45일 롤링 재계산** —
+  만료 개념 없음. 프론트는 +30일만 노출(constants.ts 동적 계산)이라 상수 동기 불필요
 - GitHub: https://github.com/Yewon419/JejuNow (private)
 - 정직성: 타겟=점유율%(절대 검색량 아님), 시간대=월예측×휴리스틱 프로파일 합성, 실측 혼잡도 없음, is_imputed 표시 — UI·API·모델 note에 명시됨
 
