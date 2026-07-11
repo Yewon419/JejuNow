@@ -20,6 +20,7 @@ export function FeatureCourseCard({ spot, congestion }: { spot: Spot; congestion
           sizes="(max-width: 640px) 100vw, 600px"
           className="object-cover"
           priority
+          unoptimized={spot.image_url.endsWith(".bmp")}
         />
       ) : (
         <div className="h-full w-full bg-gradient-to-br from-primary to-cta" aria-hidden />
