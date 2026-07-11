@@ -12,6 +12,7 @@ import {
   HOUR_MIN,
   LEVEL_COLOR,
   catLabel,
+  cleanHours,
 } from "@/lib/constants";
 import type { KakaoCustomOverlay, KakaoMapObj } from "@/lib/kakao";
 import { fetchCongestionClient, fetchSpotDayClient } from "@/lib/supabaseClient";
@@ -281,6 +282,7 @@ export function MapView({
                       fill
                       sizes="72px"
                       className="object-cover"
+                      unoptimized={selected.image_url.endsWith(".bmp")}
                     />
                   </div>
                 ) : null}
@@ -305,7 +307,9 @@ export function MapView({
                     <p className="mt-1 truncate text-xs text-dim">{selected.addr}</p>
                   ) : null}
                   {selected.opening_hours ? (
-                    <p className="mt-0.5 truncate text-xs text-dim">🕐 {selected.opening_hours}</p>
+                    <p className="mt-0.5 truncate text-xs text-dim">
+                      🕐 {cleanHours(selected.opening_hours)}
+                    </p>
                   ) : null}
                 </div>
               </div>

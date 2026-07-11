@@ -24,11 +24,19 @@ async function rest<T>(path: string, revalidateSec: number): Promise<T> {
   return (await res.json()) as T;
 }
 
+/** TourAPI 구형 리소스의 http URL을 https로 정규화 — 혼합콘텐츠·remotePatterns(https만) 차단 회피 */
+function normalizeSpot(s: Spot): Spot {
+  return s.image_url?.startsWith("http://")
+    ? { ...s, image_url: s.image_url.replace(/^http:\/\//, "https://") }
+    : s;
+}
+
 export async function fetchSpots(): Promise<Spot[]> {
-  return rest<Spot[]>(
+  const rows = await rest<Spot[]>(
     "spots?select=spot_id,name,cat1,cat2,lat,lng,addr,opening_hours,image_url,is_outdoor,region&order=spot_id&limit=2000",
     3600,
   );
+  return rows.map(normalizeSpot);
 }
 
 export async function fetchCongestion(date: string, hour: number): Promise<Congestion[]> {
@@ -51,7 +59,7 @@ export async function fetchSpotById(spotId: number): Promise<Spot | null> {
     `spots?select=spot_id,name,cat1,cat2,lat,lng,addr,opening_hours,image_url,is_outdoor,region&spot_id=eq.${spotId}`,
     3600,
   );
-  return rows[0] ?? null;
+  return rows[0] ? normalizeSpot(rows[0]) : null;
 }
 
 export async function fetchWeatherMonth(ym: string): Promise<WeatherMonth | null> {

@@ -70,6 +70,14 @@ export function catLabel(cat2: string | null): string {
   return CAT_LABEL[cat2] ?? "기타";
 }
 
+/** TourAPI 운영시간의 HTML 잔재(<br> 등)를 표시용 한 줄로 정리 */
+export function cleanHours(text: string): string {
+  return text
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function clampHour(h: number): number {
   return Math.min(HOUR_MAX, Math.max(HOUR_MIN, h));
 }

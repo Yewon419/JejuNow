@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LevelBadge } from "@/components/LevelBadge";
 import { findAlternatives } from "@/lib/alternatives";
-import { LEVEL_COLOR, catLabel, todayInHorizon } from "@/lib/constants";
+import { LEVEL_COLOR, catLabel, cleanHours, todayInHorizon } from "@/lib/constants";
 import { fetchCongestion, fetchSpotById, fetchSpotDay, fetchSpots } from "@/lib/supabase";
 import type { Congestion, Spot } from "@/lib/types";
 
@@ -40,18 +40,24 @@ export default async function SpotDetailPage({
 
   return (
     <main className="mx-auto min-h-dvh max-w-xl pb-12">
-      <div className="relative h-72 w-full bg-line">
+      <div
+        className={`relative h-80 w-full ${
+          spot.image_url ? "bg-line" : "bg-gradient-to-br from-primary to-cta"
+        }`}
+      >
         {spot.image_url ? (
           <Image
             src={spot.image_url}
-            alt={spot.name}
+            alt=""
             fill
             sizes="(max-width: 640px) 100vw, 576px"
             className="object-cover"
             priority
+            unoptimized={spot.image_url.endsWith(".bmp")}
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-bg to-transparent" />
+        {/* 흰 글씨 가독성 스크림 — 위(뒤로 버튼)·아래(제목) 양끝을 어둡게 */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/10 to-black/65" />
         <Link
           href="/dashboard"
           aria-label="뒤로"
@@ -61,20 +67,22 @@ export default async function SpotDetailPage({
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
         </Link>
-      </div>
-
-      <div className="relative -mt-6 space-y-8 rounded-t-3xl bg-bg px-5 pt-6">
-        <header>
-          <p className="text-xs font-medium tracking-wide text-primary">
+        <header className="absolute inset-x-0 bottom-0 px-5 pb-12">
+          <p className="text-xs font-semibold tracking-wide text-white/85">
             {spot.region} · {catLabel(spot.cat2)}
             {spot.is_outdoor === true ? " · 야외" : spot.is_outdoor === false ? " · 실내" : ""}
           </p>
-          <h1 className="mt-1 text-3xl font-bold text-ink">{spot.name}</h1>
-          {spot.addr ? <p className="mt-2 text-sm text-dim">{spot.addr}</p> : null}
+          <h1 className="mt-1 text-3xl font-bold text-white [text-shadow:0_1px_8px_rgb(0_0_0/0.35)]">
+            {spot.name}
+          </h1>
+          {spot.addr ? <p className="mt-2 text-sm text-white/80">{spot.addr}</p> : null}
           {spot.opening_hours ? (
-            <p className="mt-1 text-sm text-dim">운영시간: {spot.opening_hours}</p>
+            <p className="mt-1 text-sm text-white/80">운영시간: {cleanHours(spot.opening_hours)}</p>
           ) : null}
         </header>
+      </div>
+
+      <div className="relative -mt-6 space-y-8 rounded-t-3xl bg-bg px-5 pt-8">
 
         <section aria-labelledby="timeline-heading">
           <h2 id="timeline-heading" className="mb-1 text-lg font-bold text-ink">
