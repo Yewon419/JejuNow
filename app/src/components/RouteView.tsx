@@ -32,7 +32,7 @@ export function RouteView({
   // 경로 조회
   useEffect(() => {
     let cancelled = false;
-    fetchRoute(from.spot_id, to.spot_id).then((r) => {
+    fetchRoute(from, to).then((r) => {
       if (cancelled) return;
       if (!r) {
         setStatus("failed");
@@ -43,7 +43,7 @@ export function RouteView({
     return () => {
       cancelled = true;
     };
-  }, [from.spot_id, to.spot_id]);
+  }, [from, to]);
 
   // SDK + 경로가 모두 준비되면 지도에 그린다
   const drawMap = useCallback(() => {
