@@ -3,7 +3,7 @@
 > 재부팅/새 세션 시 이 파일부터 읽으면 이어서 진행 가능.
 > 설계 = `BUILD_PLAN.md` + **설계 v2(2026-07-10, 아래)**. 자율 구현 지시서 = `FABLE_TASKS.md`.
 
-## 현재 단계 (2026-07-11, 설계 v2 자동화 구간 종료 — 배포 사람 단계만 대기)
+## 현재 단계 (2026-07-11, 설계 v2 전체 반영 종료 — 필수 단계 없음)
 
 **웹데모 복구 확인**: Supabase restore(07-11) → 전 라우트 200. Actions 3종 실전 검증 통과
 (keepalive·precompute×2·collect-spots). 모델 3-way 재학습 반영: **test MAE 0.4607 /
@@ -19,20 +19,23 @@ congestion_pred 롤링 적재 확인(07-11~, 주간 갱신). 로컬 API 실측: 
 - 프론트 `/simulate`·`/alternatives` 라이브 연결 + Supabase 폴백 (`app/src/lib/api.ts`)
 - Railway 탈락($5/월 고정) → `render.yaml`(무료) + UptimeRobot 5분 핑 전략
 
-**남은 사람 단계:**
-1. **UptimeRobot** — 무료 가입 → HTTP 모니터 `https://jejunow-api.onrender.com/keepalive`
-   5분 간격. ⚠ 이거 전까지 Render는 15분 슬립(콜드 ~20s → 프론트 폴백으로 동작은 유지)이고
-   **Supabase 7일 일시정지 방어가 주간 Actions 백업 핑뿐**이라 최우선.
-2. **Kakao Web 플랫폼 도메인 등록** — developers.kakao.com → 내 앱 → 플랫폼 → Web →
-   `https://jejunow.vercel.app` + `http://localhost:3000` (지도 마커 표시용)
-3. (선택) 온보딩 실사진 교체 / (나중) iOS 스토어 제출 — Apple Developer $99·심사
+**남은 것 (전부 선택/나중):** 온보딩 실사진 교체 / iOS 스토어 제출(Apple Developer $99·심사) /
+deploy_vercel.ps1 REST→CLI 방식 수정 / 최종 제출물 안내문 도착 시 산출물 보정
+
+**무중단 체계 (심사 10~11월 대비, 2026-07-11 완성):**
+- UptimeRobot 5분 핑 → `/keepalive`(매 핑 DB 쿼리 + 예측기 워밍) — 21분 유휴 실측으로
+  슬립 방지 검증(3.4s 응답, 콜드 20s+ 아님). 장애 시 가입 이메일로 알림
+- 주간 Actions: precompute 롤링(월 09:30 KST)·collect-spots(수 00:10)·Supabase 백업 핑(월·목)
+- 프론트는 API 장애 시 Supabase precompute 폴백 — 어느 한쪽이 죽어도 데모 유지
 
 **완료 기록 (2026-07-11):** Supabase restore → 전 라우트 200 / 인덱스 0003 적용(대표) /
 Render 배포 `https://jejunow-api.onrender.com` (/keepalive 200·simulate 콜드 19.9s·웜 0.4s) /
 Vercel 재배포(NEXT_PUBLIC_API_URL 등록, CLI 48은 auth.json 정적 토큰이 아니라 CLI 명령으로
 env 등록해야 함 — deploy_vercel.ps1의 REST 방식은 토큰 만료로 실패) /
 **프로덕션 E2E: /schedule에서 POST /simulate·GET /alternatives 200 확인 (라이브 추론 실물화)** /
-collect-spots로 운영시간 567→710 (잔여 91은 TourAPI 원천에 정보 없음 추정)
+collect-spots로 운영시간 567→710 (잔여 91은 TourAPI 원천에 정보 없음 추정) /
+UptimeRobot 모니터 등록·Up (대표) / Kakao JS 키 도메인 등록(신 콘솔: 플랫폼 키 → JS 키 수정 →
+JavaScript SDK 도메인, 브라우저 자동화) → **지도 마커 라이브 렌더 확인**
 
 ### 디자인 (2026-06-24, 제안서 초안 반영 완료)
 - 제안서 PDF 5p 목업 기준 **다크 네이비 → 라이트 테마** 전면 전환 (커밋 `3185393`)
