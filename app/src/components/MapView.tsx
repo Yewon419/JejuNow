@@ -269,52 +269,58 @@ export function MapView({
         {selected ? (
           <section
             aria-label={`${selected.name} 상세 정보`}
-            className="absolute inset-x-0 bottom-0 z-10 animate-sheet-up rounded-t-3xl border-t border-line bg-surface shadow-[0_-8px_30px_rgb(16_33_58_/_0.12)]"
+            className="absolute inset-x-0 bottom-0 z-10 animate-sheet-up overflow-hidden rounded-t-3xl border-t border-line bg-surface shadow-[0_-8px_30px_rgb(16_33_58_/_0.12)]"
           >
-            <div className="mx-auto mt-2.5 h-1 w-9 rounded-full bg-line" aria-hidden />
-            <div className="max-h-[46dvh] overflow-y-auto px-5 pb-5 pt-3">
-              <div className="flex items-start gap-3.5">
-                {selected.image_url ? (
-                  <div className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-2xl">
-                    <Image
-                      src={selected.image_url}
-                      alt=""
-                      fill
-                      sizes="72px"
-                      className="object-cover"
-                      unoptimized={selected.image_url.endsWith(".bmp")}
-                    />
-                  </div>
-                ) : null}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="truncate text-lg font-bold text-ink">{selected.name}</p>
-                    <button
-                      type="button"
-                      onClick={() => setSelected(null)}
-                      aria-label="닫기"
-                      className="-mr-1 -mt-0.5 shrink-0 cursor-pointer rounded-full p-1 text-dim hover:text-ink"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                  <p className="text-xs font-medium text-primary">
-                    {catLabel(selected.cat2)} <span className="text-dim">· {selected.region}</span>
-                  </p>
-                  {selected.addr ? (
-                    <p className="mt-1 truncate text-xs text-dim">{selected.addr}</p>
-                  ) : null}
-                  {selected.opening_hours ? (
-                    <p className="mt-0.5 truncate text-xs text-dim">
-                      🕐 {cleanHours(selected.opening_hours)}
-                    </p>
-                  ) : null}
-                </div>
+            {/* 사진 배경 헤더 — 상세 히어로와 동일 문법: 실사진 + 스크림 + 흰 글씨 */}
+            <div
+              className={`relative h-40 w-full ${
+                selected.image_url ? "" : "bg-gradient-to-br from-primary to-cta"
+              }`}
+            >
+              {selected.image_url ? (
+                <Image
+                  src={selected.image_url}
+                  alt=""
+                  fill
+                  sizes="(max-width: 640px) 100vw, 576px"
+                  className="object-cover"
+                  unoptimized={selected.image_url.endsWith(".bmp")}
+                />
+              ) : null}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/70" />
+              <div className="absolute inset-x-0 top-2.5 flex justify-center" aria-hidden>
+                <div className="h-1 w-9 rounded-full bg-white/60" />
               </div>
+              <button
+                type="button"
+                onClick={() => setSelected(null)}
+                aria-label="닫기"
+                className="absolute right-3 top-3 cursor-pointer rounded-full bg-black/30 p-1.5 text-white backdrop-blur hover:bg-black/50"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4.5 w-4.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <div className="absolute inset-x-0 bottom-0 px-5 pb-3">
+                <p className="truncate text-xl font-bold text-white [text-shadow:0_1px_6px_rgb(0_0_0/0.35)]">
+                  {selected.name}
+                </p>
+                <p className="text-xs font-medium text-white/85">
+                  {catLabel(selected.cat2)} · {selected.region}
+                </p>
+                {selected.addr ? (
+                  <p className="mt-0.5 truncate text-xs text-white/75">{selected.addr}</p>
+                ) : null}
+                {selected.opening_hours ? (
+                  <p className="mt-0.5 truncate text-xs text-white/75">
+                    🕐 {cleanHours(selected.opening_hours)}
+                  </p>
+                ) : null}
+              </div>
+            </div>
 
-              <div className="mt-4 rounded-2xl bg-bg p-3.5">
+            <div className="max-h-[36dvh] overflow-y-auto px-5 pb-5 pt-4">
+              <div className="rounded-2xl bg-bg p-3.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-dim">
                     {date.slice(5).replace("-", ".")} {hour}시 예측 혼잡도
