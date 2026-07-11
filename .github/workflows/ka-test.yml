@@ -1,4 +1,5 @@
-# 임시 — 카카오내비 KA 헤더 형식 실험 (데이터센터 IP에서만 401 재현되므로 러너에서 테스트)
+# 임시 — 카카오내비 KA 헤더 형식 실험. 러너에서는 KA 없이 성공하므로,
+# 형식이 깨진 KA를 붙이면 -401이 재현된다 → 어떤 형식이 유효한지 역검증.
 # 확정 후 삭제 예정
 name: ka-test
 
@@ -14,15 +15,16 @@ jobs:
         env:
           KEY: ${{ secrets.KAKAO_REST_API_KEY }}
         run: |
+          set +e
           URL="https://apis-navi.kakaomobility.com/v1/directions?origin=126.7975,33.5561&destination=126.9410,33.4620"
           try() {
-            code=$(curl -s -o /tmp/body -w "%{http_code}" -H "Authorization: KakaoAK $KEY" "$@" "$URL")
-            echo "== [$code] $1"
-            head -c 160 /tmp/body; echo
+            label="$1"; shift
+            body=$(curl -s -H "Authorization: KakaoAK $KEY" "$@" "$URL")
+            echo "== $label -> $(echo "$body" | head -c 120)"
           }
           try "no-KA"
-          try "KA: sdk/1.0 os/rest lang/ko origin/https://jejunow.vercel.app" -H "KA: sdk/1.0 os/rest lang/ko origin/https://jejunow.vercel.app"
-          try "KA: os/javascript origin/https://jejunow.vercel.app" -H "KA: os/javascript origin/https://jejunow.vercel.app"
-          try "KA: sdk/1.43.5 os/javascript sdk_type/javascript lang/ko-KR device/Win32 origin/https%3A%2F%2Fjejunow.vercel.app" -H "KA: sdk/1.43.5 os/javascript sdk_type/javascript lang/ko-KR device/Win32 origin/https%3A%2F%2Fjejunow.vercel.app"
-          try "Referer: https://jejunow.vercel.app" -H "Referer: https://jejunow.vercel.app"
-          try "Origin: https://jejunow.vercel.app" -H "Origin: https://jejunow.vercel.app"
+          try "os-rest" -H "KA: sdk/1.0 os/rest lang/ko origin/https://jejunow.vercel.app"
+          try "os-javascript" -H "KA: sdk/1.0 os/javascript lang/ko origin/https://jejunow.vercel.app"
+          try "encoded-origin" -H "KA: sdk/1.43.5 os/javascript sdk_type/javascript lang/ko-KR device/Win32 origin/https%3A%2F%2Fjejunow.vercel.app"
+          try "referer-only" -H "Referer: https://jejunow.vercel.app"
+          exit 0
