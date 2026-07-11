@@ -1,0 +1,28 @@
+# 임시 — 카카오내비 KA 헤더 형식 실험 (데이터센터 IP에서만 401 재현되므로 러너에서 테스트)
+# 확정 후 삭제 예정
+name: ka-test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Try KA header variants
+        env:
+          KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+        run: |
+          URL="https://apis-navi.kakaomobility.com/v1/directions?origin=126.7975,33.5561&destination=126.9410,33.4620"
+          try() {
+            code=$(curl -s -o /tmp/body -w "%{http_code}" -H "Authorization: KakaoAK $KEY" "$@" "$URL")
+            echo "== [$code] $1"
+            head -c 160 /tmp/body; echo
+          }
+          try "no-KA"
+          try "KA: sdk/1.0 os/rest lang/ko origin/https://jejunow.vercel.app" -H "KA: sdk/1.0 os/rest lang/ko origin/https://jejunow.vercel.app"
+          try "KA: os/javascript origin/https://jejunow.vercel.app" -H "KA: os/javascript origin/https://jejunow.vercel.app"
+          try "KA: sdk/1.43.5 os/javascript sdk_type/javascript lang/ko-KR device/Win32 origin/https%3A%2F%2Fjejunow.vercel.app" -H "KA: sdk/1.43.5 os/javascript sdk_type/javascript lang/ko-KR device/Win32 origin/https%3A%2F%2Fjejunow.vercel.app"
+          try "Referer: https://jejunow.vercel.app" -H "Referer: https://jejunow.vercel.app"
+          try "Origin: https://jejunow.vercel.app" -H "Origin: https://jejunow.vercel.app"
