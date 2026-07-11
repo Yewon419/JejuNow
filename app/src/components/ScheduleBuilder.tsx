@@ -156,7 +156,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
         {slots.length > 1 ? (
           <span aria-hidden className="absolute bottom-5 left-[0.4375rem] top-5 w-0.5 bg-line" />
         ) : null}
-        {slots.map((slot) => {
+        {slots.map((slot, idx) => {
           const spot = spotById.get(slot.spotId);
           if (!spot) return null;
           const c =
@@ -168,8 +168,28 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
             ? (liveAlts.get(`${slot.hour}:${slot.spotId}`)?.slice(0, 3) ??
               findAlternatives(spot, spots, hourMap, 3))
             : [];
+          // 직전 슬롯 → 현재 슬롯 이동 경로 (카카오맵 길찾기, 모바일은 카카오맵 앱 내비로 연결)
+          const prevSpot = idx > 0 ? spotById.get(slots[idx - 1].spotId) : undefined;
+          const routeUrl = prevSpot
+            ? `https://map.kakao.com/link/from/${encodeURIComponent(prevSpot.name)},${prevSpot.lat},${prevSpot.lng}/to/${encodeURIComponent(spot.name)},${spot.lat},${spot.lng}`
+            : null;
           return (
             <li key={slot.hour} className="relative">
+              {routeUrl ? (
+                <a
+                  href={routeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${prevSpot?.name}에서 ${spot.name}까지 경로 보기`}
+                  className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-xs font-semibold text-primary shadow-card transition-colors hover:border-primary"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-3.5 w-3.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
+                  </svg>
+                  경로 보기
+                </a>
+              ) : null}
+            <div className="relative">
               <span className="absolute -left-8 top-4">
                 <LevelDot level={c?.level ?? 1} size={14} />
               </span>
@@ -252,6 +272,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                   )}
                 </div>
               ) : null}
+            </div>
             </div>
             </li>
           );
