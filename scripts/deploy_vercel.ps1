@@ -33,6 +33,8 @@ $map = [ordered]@{
     "NEXT_PUBLIC_SUPABASE_ANON_KEY" = $vars["SUPABASE_ANON_KEY"]
     "NEXT_PUBLIC_KAKAO_JS_KEY"      = $vars["KAKAO_JS_KEY"]
 }
+# 라이브 추론 API (Render 배포 후 .env에 RENDER_API_URL 추가하면 자동 등록 — 없으면 프론트가 폴백)
+if ($vars["RENDER_API_URL"]) { $map["NEXT_PUBLIC_API_URL"] = $vars["RENDER_API_URL"] }
 
 # 3) 기존 NEXT_PUBLIC env 삭제 후 API로 재등록 (파이프 금지)
 $existing = Invoke-RestMethod -Uri "https://api.vercel.com/v9/projects/$projectId/env?teamId=$teamId" -Headers $headers

@@ -62,7 +62,8 @@ def main() -> None:
     inserted = db.insert("congestion_pred", rows, on_conflict="spot_id,date,hour")
     logger.info("congestion_pred upsert: %d행", inserted)
     db.delete_where("congestion_pred", {"date": f"lt.{horizon_start.isoformat()}"})
-    logger.info("호라이즌 이전(%s 미만) 과거분 삭제", horizon_start)
+    db.delete_where("congestion_pred", {"date": f"gt.{horizon_end.isoformat()}"})
+    logger.info("호라이즌 밖(%s 미만·%s 초과) 잔재 삭제", horizon_start, horizon_end)
 
 
 if __name__ == "__main__":

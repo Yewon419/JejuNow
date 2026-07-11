@@ -3,9 +3,12 @@
 > 재부팅/새 세션 시 이 파일부터 읽으면 이어서 진행 가능.
 > 설계 = `BUILD_PLAN.md` + **설계 v2(2026-07-10, 아래)**. 자율 구현 지시서 = `FABLE_TASKS.md`.
 
-## 현재 단계 (2026-07-10, 설계 v2 Phase 0~2 코드 완료 — 사람 단계 대기)
+## 현재 단계 (2026-07-11, 설계 v2 자동화 구간 종료 — 배포 사람 단계만 대기)
 
-**⚠ 웹데모 반파 상태**: Supabase 무료 티어 일시정지(06-24 이후 무활동)로 `/map`·`/schedule` 500.
+**웹데모 복구 확인**: Supabase restore(07-11) → 전 라우트 200. Actions 3종 실전 검증 통과
+(keepalive·precompute×2·collect-spots). 모델 3-way 재학습 반영: **test MAE 0.4607 /
+MAPE 14.87% / top30 83.5%** (이전 0.423은 valid 낙관 편향 — 발표에는 test 수치 사용).
+congestion_pred 롤링 적재 확인(07-11~, 주간 갱신). 로컬 API 실측: /simulate 콜드 3.5s·웜 10ms.
 공모전 일정 = 개발 5~9월 → **심사 10~11월** — 심사 시점 무중단이 v2 설계의 1순위 목표.
 
 **설계 v2 반영분 (커밋 bf32d38, gate PASS)**
@@ -17,15 +20,18 @@
 - Railway 탈락($5/월 고정) → `render.yaml`(무료) + UptimeRobot 5분 핑 전략
 
 **남은 사람 단계 (순서대로):**
-1. **Supabase restore** — supabase.com 로그인 → 프로젝트 `vuneeprkjcaxhdhgwcva` → Restore.
-   이후 자동 작업 재개 가능(마이그레이션 0003 적용 → precompute 재실행 → 라우트 200 검증).
-2. **Kakao Web 플랫폼 도메인 등록** — developers.kakao.com → 내 앱 → 플랫폼 → Web →
-   `https://jejunow.vercel.app` + `http://localhost:3000` (지도 마커 표시용).
+1. ~~Supabase restore~~ ✅ 07-11 완료 (전 라우트 200 확인)
+2. **마이그레이션 0003 적용** — Supabase 대시보드 SQL Editor에
+   `db/migrations/0003_congestion_pred_date_hour_idx.sql` 내용 실행 (인덱스 1개.
+   DB 비밀번호·대시보드 세션이 없어 자동 적용 불가했음)
 3. **Render 배포** — render.com 가입/로그인 → New Blueprint → repo 연결(render.yaml 자동 인식)
-   → env 6종 입력(_keys\JejuNow\.env) → 배포 URL을 Vercel env `NEXT_PUBLIC_API_URL`로 등록.
-4. **UptimeRobot** — 무료 가입 → HTTP 모니터 `https://<render-url>/keepalive` 5분 간격.
-5. (선택) 온보딩 실사진 교체 — `TravelerTypeSelect.tsx` gradient → 이미지.
-6. (나중) iOS 스토어 제출 — Apple Developer $99·심사. `app/ios/` + `ios-build.yml` 준비됨.
+   → env 6종 입력(_keys\JejuNow\.env) → **배포 URL을 중앙 .env에 `RENDER_API_URL=`로 추가**
+4. **`npx vercel login`**(CLI 토큰 만료됨) → `powershell -File scripts\deploy_vercel.ps1` 재배포 —
+   스크립트가 .env의 RENDER_API_URL을 `NEXT_PUBLIC_API_URL`로 자동 등록하도록 확장됨
+5. **UptimeRobot** — 무료 가입 → HTTP 모니터 `https://<render-url>/keepalive` 5분 간격
+6. **Kakao Web 플랫폼 도메인 등록** — developers.kakao.com → 내 앱 → 플랫폼 → Web →
+   `https://jejunow.vercel.app` + `http://localhost:3000` (지도 마커 표시용)
+7. (선택) 온보딩 실사진 교체 / (나중) iOS 스토어 제출 — Apple Developer $99·심사
 
 ### 디자인 (2026-06-24, 제안서 초안 반영 완료)
 - 제안서 PDF 5p 목업 기준 **다크 네이비 → 라이트 테마** 전면 전환 (커밋 `3185393`)
