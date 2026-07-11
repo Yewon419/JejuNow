@@ -198,12 +198,13 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
               }`}
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+                {/* min-w-0: 이름 truncate가 작동하려면 flex 체인 전체에 필요 — 없으면 행이 카드 밖으로 넘침 */}
+                <div className="flex min-w-0 flex-1 items-center gap-3">
                   <select
                     aria-label="시간 변경"
                     value={slot.hour}
                     onChange={(e) => changeHour(slot.hour, Number(e.target.value))}
-                    className="rounded-lg border border-line bg-bg px-2 py-1.5 text-sm font-semibold text-ink"
+                    className="shrink-0 rounded-lg border border-line bg-bg px-2 py-1.5 text-sm font-semibold text-ink"
                   >
                     {Array.from({ length: HOUR_MAX - HOUR_MIN + 1 }, (_, i) => HOUR_MIN + i).map(
                       (h) => (
@@ -218,7 +219,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                     <p className="text-xs text-dim">{catLabel(spot.cat2)}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   {c ? <LevelBadge level={c.level} imputed={c.is_imputed} /> : null}
                   <button
                     type="button"
