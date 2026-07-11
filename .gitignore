@@ -6,6 +6,9 @@
 # 데이터 원본 (202 zip, 재파싱용 로컬 보존)
 data/raw/
 
+# Claude Code 런타임 락 — 세션 상태 파일, 추적 금지 (2026-06-13 커밋 유입 사고 재발 방지)
+.claude/scheduled_tasks.lock
+
 # Python
 __pycache__/
 *.py[cod]
