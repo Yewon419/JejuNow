@@ -24,6 +24,8 @@ DIRECTIONS_URL = "https://apis-navi.kakaomobility.com/v1/directions"
 def _session() -> requests.Session:
     s = requests.Session()
     s.headers["Authorization"] = f"KakaoAK {get_settings().kakao_rest_api_key}"
+    # 데이터센터발 요청은 KA 헤더 없이 401로 거부됨 ("KA Header is required" — Render 실측)
+    s.headers["KA"] = "sdk/1.0 os/rest lang/ko origin/https://jejunow.vercel.app"
     return s
 
 
