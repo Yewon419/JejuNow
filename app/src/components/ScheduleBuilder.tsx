@@ -273,7 +273,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
           aria-modal="true"
           aria-label="스팟 선택"
         >
-          <div className="max-h-[80dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl border-t border-line bg-surface p-5">
+          <div className="max-h-[80dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-line bg-surface p-5">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-bold text-ink">스팟 선택</h2>
               <button

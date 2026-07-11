@@ -44,10 +44,11 @@ export function BottomNav() {
   return (
     <nav
       aria-label="주요 메뉴"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur"
+      className="fixed inset-x-0 bottom-0 z-40"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="mx-auto flex max-w-xl">
+      {/* 폰 프레임(max-w-md)에 맞춰 바 배경도 프레임 폭만 차지 */}
+      <div className="mx-auto flex max-w-md border-t border-line bg-surface/95 backdrop-blur sm:border-x">
         {TABS.map((tab) => {
           const active = pathname.startsWith(tab.href);
           return (

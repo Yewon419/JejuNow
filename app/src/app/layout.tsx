@@ -20,7 +20,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className="h-full antialiased">
-      <body className="min-h-dvh">{children}</body>
+      <body className="min-h-dvh">
+        {/* 폰 프레임 — 데스크톱에서도 모바일 비율(max-w-md)로 중앙 고정 */}
+        <div className="mx-auto min-h-dvh w-full max-w-md sm:border-x sm:border-line">
+          {children}
+        </div>
+      </body>
     </html>
   );
 }
