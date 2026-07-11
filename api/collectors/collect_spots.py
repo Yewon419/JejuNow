@@ -6,6 +6,7 @@ areaBasedList2를 **법정동 코드(lDongRegnCd=50)**로 조회한다 — legac
 (803/803 채워짐, legacy는 526/803만).
 
 수집 대상: 관광지(12)·문화시설(14)·레포츠(28). detailIntro2로 운영시간 보강.
+firstimage 없는 스팟은 detailImage2(originimgurl 첫 장)로 이미지 보강 — 원천에도 없으면 null 유지.
 
 실행: .venv\\Scripts\\python.exe -m api.collectors.collect_spots
 """
@@ -211,6 +212,30 @@ def fetch_opening_hours(
     return _str_field(item, USETIME_FIELD[spot.content_type_id])
 
 
+def fetch_first_image(
+    session: requests.Session, service_key: str, spot: Spot
+) -> str | None:
+    """firstimage 부재 스팟용 — detailImage2의 첫 originimgurl (없으면 None)."""
+    params = _base_params(service_key) | {
+        "contentId": spot.content_id,
+        "imageYN": "Y",
+        "numOfRows": "1",
+    }
+    log_params = {k: v for k, v in params.items() if k != "serviceKey"}
+    try:
+        payload = get_json(session, f"{BASE_URL}/detailImage2", params, log_params=log_params)
+        items, _ = _response_items(payload, f"detailImage2[{spot.content_id}]")
+    except ExternalApiError as exc:
+        if "quota" in str(exc).lower() or "status=429" in str(exc):
+            raise QuotaExceededError(str(exc)) from exc
+        logger.warning("이미지 조회 실패(계속 진행): %s — %s", spot.name, exc)
+        return None
+    if not items:
+        return None
+    item = as_dict(items[0], "image item")
+    return _str_field(item, "originimgurl")
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     settings = load_settings()
@@ -225,12 +250,15 @@ def main() -> None:
         raise RuntimeError(f"스팟 수가 비정상적으로 적음: {len(spots)} (기대 ~800)")
 
     db = SupabaseRest(settings.supabase_url, settings.supabase_service_role_key)
-    # 쿼터 소진 등으로 이번에 못 받은 운영시간은 기존 DB 값 보존
+    # 쿼터 소진 등으로 이번에 못 받은 운영시간·이미지는 기존 DB 값 보존
     existing_hours: dict[str, str] = {}
-    for row in db.select_all("spots", {"select": "content_id,opening_hours"}):
-        cid, oh = row.get("content_id"), row.get("opening_hours")
+    existing_images: dict[str, str] = {}
+    for row in db.select_all("spots", {"select": "content_id,opening_hours,image_url"}):
+        cid, oh, img = row.get("content_id"), row.get("opening_hours"), row.get("image_url")
         if isinstance(cid, str) and isinstance(oh, str):
             existing_hours[cid] = oh
+        if isinstance(cid, str) and isinstance(img, str):
+            existing_images[cid] = img
 
     logger.info("운영시간 보강 시작 (%d건, detailIntro2)", len(spots))
     hours: dict[str, str | None] = {}
@@ -250,6 +278,26 @@ def main() -> None:
             logger.info("운영시간 %d/%d", i, len(spots))
         time.sleep(DETAIL_DELAY_SEC)
 
+    # 이미지 보강 — firstimage도 기존 DB 값도 없는 스팟만 detailImage2 조회 (~40건)
+    need_image = [
+        s for s in spots if s.image_url is None and s.content_id not in existing_images
+    ]
+    logger.info("이미지 보강 시작 (%d건, detailImage2)", len(need_image))
+    backfilled: dict[str, str] = {}
+    for i, spot in enumerate(need_image, 1):
+        if quota_hit:
+            break
+        try:
+            img = fetch_first_image(session, settings.data_go_kr_key, spot)
+        except QuotaExceededError as exc:
+            quota_hit = True
+            logger.warning("쿼터 소진 — 이미지 보강 중단(%d/%d): %s", i, len(need_image), exc)
+            break
+        if img:
+            backfilled[spot.content_id] = img
+        time.sleep(DETAIL_DELAY_SEC)
+    logger.info("이미지 보강 결과: %d/%d건 확보", len(backfilled), len(need_image))
+
     rows: list[dict[str, object]] = [
         {
             "content_id": s.content_id,
@@ -261,7 +309,9 @@ def main() -> None:
             "lng": s.lng,
             "addr": s.addr,
             "opening_hours": hours.get(s.content_id) or existing_hours.get(s.content_id),
-            "image_url": s.image_url,
+            "image_url": s.image_url
+            or backfilled.get(s.content_id)
+            or existing_images.get(s.content_id),
             "is_outdoor": _is_outdoor(s.cat2),
             "region": s.region,
         }
