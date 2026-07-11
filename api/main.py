@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routes.alternatives import router as alternatives_router
 from api.routes.congestion import router as congestion_router
 from api.routes.keepalive import router as keepalive_router
+from api.routes.route import router as route_router
 from api.routes.simulate import router as simulate_router
 from api.routes.spots import router as spots_router
 
@@ -33,6 +34,7 @@ app.include_router(congestion_router)
 app.include_router(simulate_router)
 app.include_router(alternatives_router)
 app.include_router(keepalive_router)
+app.include_router(route_router)
 
 
 @app.get("/health")

@@ -7,6 +7,12 @@ import datetime
 from pydantic import BaseModel, Field
 
 
+class RouteOut(BaseModel):
+    distance_m: int = Field(description="총 거리(m)")
+    duration_s: int = Field(description="예상 소요(초)")
+    path: list[tuple[float, float]] = Field(description="경로 좌표열 [lat, lng]")
+
+
 class SpotOut(BaseModel):
     spot_id: int
     name: str

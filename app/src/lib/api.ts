@@ -78,6 +78,19 @@ export async function simulateSchedule(
   return byHour;
 }
 
+export type RouteData = {
+  distance_m: number;
+  duration_s: number;
+  path: [number, number][]; // [lat, lng]
+};
+
+/** 두 스팟 간 자동차 경로 (카카오내비 API 프록시) — 실패·미배포 시 null */
+export async function fetchRoute(fromSpot: number, toSpot: number): Promise<RouteData | null> {
+  const res = await get<RouteData>(`/route?from_spot=${fromSpot}&to_spot=${toSpot}`);
+  if (!res || !Array.isArray(res.path) || res.path.length === 0) return null;
+  return res;
+}
+
 /** 라이브 대안 추천 — 성공 시 Alternative[](TS 폴백과 동일 형태), 실패 시 null */
 export async function fetchAlternativesLive(
   spotId: number,

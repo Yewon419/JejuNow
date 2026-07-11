@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { type Alternative, findAlternatives } from "@/lib/alternatives";
 import { fetchAlternativesLive, simulateSchedule } from "@/lib/api";
+import { RouteView } from "./RouteView";
 import {
   HORIZON_END,
   HORIZON_START,
@@ -32,6 +33,8 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   // 라이브 추론(/simulate) 결과 — null이면 precompute(congestionByHour)로 폴백
   const [liveByHour, setLiveByHour] = useState<Map<number, Map<number, Congestion>> | null>(null);
   const [liveAlts, setLiveAlts] = useState<Map<string, Alternative[]>>(new Map());
+  // 인앱 경로 보기 (카카오내비 API → 우리 지도)
+  const [routeView, setRouteView] = useState<{ from: Spot; to: Spot } | null>(null);
 
   const spotById = useMemo(() => new Map(spots.map((s) => [s.spot_id, s])), [spots]);
 
@@ -168,26 +171,22 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
             ? (liveAlts.get(`${slot.hour}:${slot.spotId}`)?.slice(0, 3) ??
               findAlternatives(spot, spots, hourMap, 3))
             : [];
-          // 직전 슬롯 → 현재 슬롯 이동 경로 (카카오맵 길찾기, 모바일은 카카오맵 앱 내비로 연결)
+          // 직전 슬롯 → 현재 슬롯 이동 경로 (인앱 지도, 실패 시 카카오맵 링크 폴백)
           const prevSpot = idx > 0 ? spotById.get(slots[idx - 1].spotId) : undefined;
-          const routeUrl = prevSpot
-            ? `https://map.kakao.com/link/from/${encodeURIComponent(prevSpot.name)},${prevSpot.lat},${prevSpot.lng}/to/${encodeURIComponent(spot.name)},${spot.lat},${spot.lng}`
-            : null;
           return (
             <li key={slot.hour} className="relative">
-              {routeUrl ? (
-                <a
-                  href={routeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`${prevSpot?.name}에서 ${spot.name}까지 경로 보기`}
-                  className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-xs font-semibold text-primary shadow-card transition-colors hover:border-primary"
+              {prevSpot ? (
+                <button
+                  type="button"
+                  onClick={() => setRouteView({ from: prevSpot, to: spot })}
+                  aria-label={`${prevSpot.name}에서 ${spot.name}까지 경로 보기`}
+                  className="mb-3 inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-xs font-semibold text-primary shadow-card transition-colors hover:border-primary"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-3.5 w-3.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
                   </svg>
                   경로 보기
-                </a>
+                </button>
               ) : null}
             <div className="relative">
               <span className="absolute -left-8 top-4">
@@ -337,6 +336,14 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
             </ul>
           </div>
         </div>
+      ) : null}
+
+      {routeView ? (
+        <RouteView
+          from={routeView.from}
+          to={routeView.to}
+          onClose={() => setRouteView(null)}
+        />
       ) : null}
     </main>
   );
