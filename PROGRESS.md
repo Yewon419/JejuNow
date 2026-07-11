@@ -19,19 +19,20 @@ congestion_pred 롤링 적재 확인(07-11~, 주간 갱신). 로컬 API 실측: 
 - 프론트 `/simulate`·`/alternatives` 라이브 연결 + Supabase 폴백 (`app/src/lib/api.ts`)
 - Railway 탈락($5/월 고정) → `render.yaml`(무료) + UptimeRobot 5분 핑 전략
 
-**남은 사람 단계 (순서대로):**
-1. ~~Supabase restore~~ ✅ 07-11 완료 (전 라우트 200 확인)
-2. **마이그레이션 0003 적용** — Supabase 대시보드 SQL Editor에
-   `db/migrations/0003_congestion_pred_date_hour_idx.sql` 내용 실행 (인덱스 1개.
-   DB 비밀번호·대시보드 세션이 없어 자동 적용 불가했음)
-3. **Render 배포** — render.com 가입/로그인 → New Blueprint → repo 연결(render.yaml 자동 인식)
-   → env 6종 입력(_keys\JejuNow\.env) → **배포 URL을 중앙 .env에 `RENDER_API_URL=`로 추가**
-4. **`npx vercel login`**(CLI 토큰 만료됨) → `powershell -File scripts\deploy_vercel.ps1` 재배포 —
-   스크립트가 .env의 RENDER_API_URL을 `NEXT_PUBLIC_API_URL`로 자동 등록하도록 확장됨
-5. **UptimeRobot** — 무료 가입 → HTTP 모니터 `https://<render-url>/keepalive` 5분 간격
-6. **Kakao Web 플랫폼 도메인 등록** — developers.kakao.com → 내 앱 → 플랫폼 → Web →
+**남은 사람 단계:**
+1. **UptimeRobot** — 무료 가입 → HTTP 모니터 `https://jejunow-api.onrender.com/keepalive`
+   5분 간격. ⚠ 이거 전까지 Render는 15분 슬립(콜드 ~20s → 프론트 폴백으로 동작은 유지)이고
+   **Supabase 7일 일시정지 방어가 주간 Actions 백업 핑뿐**이라 최우선.
+2. **Kakao Web 플랫폼 도메인 등록** — developers.kakao.com → 내 앱 → 플랫폼 → Web →
    `https://jejunow.vercel.app` + `http://localhost:3000` (지도 마커 표시용)
-7. (선택) 온보딩 실사진 교체 / (나중) iOS 스토어 제출 — Apple Developer $99·심사
+3. (선택) 온보딩 실사진 교체 / (나중) iOS 스토어 제출 — Apple Developer $99·심사
+
+**완료 기록 (2026-07-11):** Supabase restore → 전 라우트 200 / 인덱스 0003 적용(대표) /
+Render 배포 `https://jejunow-api.onrender.com` (/keepalive 200·simulate 콜드 19.9s·웜 0.4s) /
+Vercel 재배포(NEXT_PUBLIC_API_URL 등록, CLI 48은 auth.json 정적 토큰이 아니라 CLI 명령으로
+env 등록해야 함 — deploy_vercel.ps1의 REST 방식은 토큰 만료로 실패) /
+**프로덕션 E2E: /schedule에서 POST /simulate·GET /alternatives 200 확인 (라이브 추론 실물화)** /
+collect-spots로 운영시간 567→710 (잔여 91은 TourAPI 원천에 정보 없음 추정)
 
 ### 디자인 (2026-06-24, 제안서 초안 반영 완료)
 - 제안서 PDF 5p 목업 기준 **다크 네이비 → 라이트 테마** 전면 전환 (커밋 `3185393`)
