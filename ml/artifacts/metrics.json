@@ -1,10 +1,15 @@
 {
-  "mae": 0.4232,
-  "mape_pct": 14.07,
-  "top30_precision": 0.8721,
-  "bottom30_precision": 0.7374,
+  "test_mae": 0.4607,
+  "test_mape_pct": 14.87,
+  "test_top30_precision": 0.8352,
+  "test_bottom30_precision": 0.7296,
+  "valid_mae": 0.3928,
   "n_train": 32400,
-  "n_valid": 3960,
-  "best_iteration": 351,
-  "note": "타겟=데이터랩 인기 점유율%(수요 프록시). 절대 검색량·실측 혼잡도 아님. 검증=2025-07~2026-05 hold-out. visitors 거시피처 미확보로 제외."
+  "n_valid": 2160,
+  "n_test": 1800,
+  "best_iteration": 318,
+  "trained_at": "2026-07-11T04:09:47+00:00",
+  "git_commit": "fa8b4fe",
+  "data_max_ym": "2026-05-01",
+  "note": "타겟=데이터랩 인기 점유율%(수요 프록시). 절대 검색량·실측 혼잡도 아님. 3-way split: valid(2025-07~12)=early stopping 전용, 보고 지표=test(2026-01~05) hold-out. visitors 거시피처는 공개 API 부재로 제외(README 참조)."
 }

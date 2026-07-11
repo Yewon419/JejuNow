@@ -1,8 +1,10 @@
 """LightGBM 학습 — 타겟 = 인기 점유율(%) (절대 검색량 아님, R1).
 
-- time-based split: 학습 ~2025-06 / 검증 2025-07~2026-05. 미래 누수 금지.
-- 검증: MAE/MAPE + 상위·하위 30% 랭킹 일치율. 실측 혼잡도 부재 — 수요 프록시 기준임을 명시.
-- 산출: ml/artifacts/{model.txt, metrics.json, feature_meta.json}
+- 3-way time split: 학습 ~2025-06 / 검증 2025-07~2025-12(early stopping 전용) /
+  테스트 2026-01~2026-05(보고 지표). 검증이 조기종료에 관여하므로 보고는 테스트로만 —
+  낙관 편향 제거. 미래 누수 금지, 범주 레벨도 학습 구간에서만 산출.
+- 평가: MAE/MAPE + 상위·하위 30% 랭킹 일치율. 실측 혼잡도 부재 — 수요 프록시 기준임을 명시.
+- 산출: ml/artifacts/{model.txt, metrics.json, feature_meta.json} (+provenance)
 
 실행: .venv\\Scripts\\python.exe -m ml.train
 """
@@ -12,8 +14,9 @@ from __future__ import annotations
 import json
 import logging
 import math
+import subprocess
 from dataclasses import asdict, dataclass
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import lightgbm as lgb
@@ -42,6 +45,7 @@ logger = logging.getLogger(__name__)
 
 ARTIFACTS = Path("ml/artifacts")
 TRAIN_END = date(2025, 6, 1)  # 이 달까지 학습
+VALID_END = date(2025, 12, 1)  # 이 달까지 검증(early stopping) — 이후는 테스트(보고)
 LGB_PARAMS: dict[str, object] = {
     "objective": "regression_l1",
     "metric": "mae",
@@ -60,14 +64,29 @@ EARLY_STOPPING = 50
 
 @dataclass(frozen=True)
 class Metrics:
-    mae: float
-    mape_pct: float
-    top30_precision: float
-    bottom30_precision: float
+    test_mae: float
+    test_mape_pct: float
+    test_top30_precision: float
+    test_bottom30_precision: float
+    valid_mae: float
     n_train: int
     n_valid: int
+    n_test: int
     best_iteration: int
+    trained_at: str
+    git_commit: str
+    data_max_ym: str
     note: str
+
+
+def git_short_head() -> str:
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, timeout=10
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return "unknown"
+    return out.stdout.strip() if out.returncode == 0 else "unknown"
 
 
 def to_frame(rows: list[FeatureRow], cat_levels: dict[str, list[str]]) -> pd.DataFrame:
@@ -122,7 +141,7 @@ def main() -> None:
 
     feats: list[FeatureRow] = []
     targets: list[float] = []
-    is_valid: list[bool] = []
+    splits: list[str] = []  # "train" | "valid" | "test"
     meta_keys: list[tuple[str, date, str]] = []
     for r in pop:
         feats.append(
@@ -136,16 +155,26 @@ def main() -> None:
             )
         )
         targets.append(r.ratio)
-        is_valid.append(r.ym > TRAIN_END)
+        if r.ym <= TRAIN_END:
+            splits.append("train")
+        elif r.ym <= VALID_END:
+            splits.append("valid")
+        else:
+            splits.append("test")
         meta_keys.append((r.region_code, r.ym, r.age_group))
 
-    levels = cat_levels_of(feats)
+    # 범주 레벨은 학습 구간에서만 — 검증·테스트 정보 누수 방지
+    levels = cat_levels_of([f for f, s in zip(feats, splits, strict=True) if s == "train"])
     df = to_frame(feats, levels)
     y = np.asarray(targets, dtype=np.float64)
-    valid_mask = np.asarray(is_valid, dtype=np.bool_)
-    x_train, y_train = df[~valid_mask], y[~valid_mask]
+    split_arr = np.asarray(splits)
+    train_mask = split_arr == "train"
+    valid_mask = split_arr == "valid"
+    test_mask = split_arr == "test"
+    x_train, y_train = df[train_mask], y[train_mask]
     x_valid, y_valid = df[valid_mask], y[valid_mask]
-    logger.info("train %d행 / valid %d행", len(x_train), len(x_valid))
+    x_test, y_test = df[test_mask], y[test_mask]
+    logger.info("train %d행 / valid %d행 / test %d행", len(x_train), len(x_valid), len(x_test))
 
     train_set = lgb.Dataset(x_train, label=y_train)
     valid_set = lgb.Dataset(x_valid, label=y_valid, reference=train_set)
@@ -157,28 +186,37 @@ def main() -> None:
         callbacks=[lgb.early_stopping(EARLY_STOPPING), lgb.log_evaluation(100)],
     )
 
-    pred = np.asarray(booster.predict(x_valid), dtype=np.float64)
-    mae = float(np.mean(np.abs(pred - y_valid)))
+    valid_pred = np.asarray(booster.predict(x_valid), dtype=np.float64)
+    valid_mae = float(np.mean(np.abs(valid_pred - y_valid)))
+
+    pred = np.asarray(booster.predict(x_test), dtype=np.float64)
+    mae = float(np.mean(np.abs(pred - y_test)))
     eps = 0.1  # ratio가 0 근처인 행의 MAPE 폭주 방지
-    mape = float(np.mean(np.abs(pred - y_valid) / np.maximum(np.abs(y_valid), eps))) * 100
+    mape = float(np.mean(np.abs(pred - y_test) / np.maximum(np.abs(y_test), eps))) * 100
     pairs = [
         (meta_keys[i][0], meta_keys[i][1], meta_keys[i][2], float(y[i]), float(p))
-        for i, p in zip(np.flatnonzero(valid_mask), pred, strict=True)
+        for i, p in zip(np.flatnonzero(test_mask), pred, strict=True)
     ]
     top30 = ranking_precision(pairs, top=True)
     bottom30 = ranking_precision(pairs, top=False)
 
     metrics = Metrics(
-        mae=round(mae, 4),
-        mape_pct=round(mape, 2),
-        top30_precision=round(top30, 4),
-        bottom30_precision=round(bottom30, 4),
+        test_mae=round(mae, 4),
+        test_mape_pct=round(mape, 2),
+        test_top30_precision=round(top30, 4),
+        test_bottom30_precision=round(bottom30, 4),
+        valid_mae=round(valid_mae, 4),
         n_train=len(x_train),
         n_valid=len(x_valid),
+        n_test=len(x_test),
         best_iteration=booster.best_iteration,
+        trained_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        git_commit=git_short_head(),
+        data_max_ym=max(r.ym for r in pop).isoformat(),
         note=(
             "타겟=데이터랩 인기 점유율%(수요 프록시). 절대 검색량·실측 혼잡도 아님. "
-            "검증=2025-07~2026-05 hold-out. visitors 거시피처 미확보로 제외."
+            "3-way split: valid(2025-07~12)=early stopping 전용, 보고 지표=test(2026-01~05) "
+            "hold-out. visitors 거시피처는 공개 API 부재로 제외(README 참조)."
         ),
     )
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
@@ -194,7 +232,10 @@ def main() -> None:
         ),
         encoding="utf-8",
     )
-    logger.info("검증 MAE=%.4f MAPE=%.2f%% top30=%.3f bottom30=%.3f", mae, mape, top30, bottom30)
+    logger.info(
+        "valid MAE=%.4f | test MAE=%.4f MAPE=%.2f%% top30=%.3f bottom30=%.3f",
+        valid_mae, mae, mape, top30, bottom30,
+    )
     if not math.isfinite(mae):
         raise RuntimeError("MAE가 유한하지 않음 — 학습 실패")
 
