@@ -84,21 +84,34 @@ export type RouteData = {
   path: [number, number][]; // [lat, lng]
 };
 
+// 경로는 (출발, 도착)당 1회만 카카오 호출 — 칩 시간 표시와 RouteView 모달이 결과 공유
+const routeCache = new Map<string, Promise<RouteData | null>>();
+
 /** 두 스팟 간 자동차 경로 — 동일 오리진 Vercel 함수(/api/kakao-route) 경유, 실패 시 null.
  *  Render 프록시는 카카오의 Render IP 플래그(401)로 사용 불가 — route.ts 주석 참조. */
-export async function fetchRoute(from: Spot, to: Spot): Promise<RouteData | null> {
-  try {
-    const res = await fetch(
-      `/api/kakao-route?from=${from.lat},${from.lng}&to=${to.lat},${to.lng}`,
-      { signal: AbortSignal.timeout(TIMEOUT_MS) },
-    );
-    if (!res.ok) return null;
-    const data = (await res.json()) as RouteData;
-    if (!Array.isArray(data.path) || data.path.length === 0) return null;
-    return data;
-  } catch {
-    return null;
-  }
+export function fetchRoute(from: Spot, to: Spot): Promise<RouteData | null> {
+  const key = `${from.spot_id}:${to.spot_id}`;
+  const cached = routeCache.get(key);
+  if (cached) return cached;
+  const promise = (async (): Promise<RouteData | null> => {
+    try {
+      const res = await fetch(
+        `/api/kakao-route?from=${from.lat},${from.lng}&to=${to.lat},${to.lng}`,
+        { signal: AbortSignal.timeout(TIMEOUT_MS) },
+      );
+      if (!res.ok) return null;
+      const data = (await res.json()) as RouteData;
+      if (!Array.isArray(data.path) || data.path.length === 0) return null;
+      return data;
+    } catch {
+      return null;
+    }
+  })();
+  routeCache.set(key, promise);
+  promise.then((r) => {
+    if (!r) routeCache.delete(key); // 일시 실패는 캐시하지 않음 (재시도 허용)
+  });
+  return promise;
 }
 
 /** 라이브 대안 추천 — 성공 시 Alternative[](TS 폴백과 동일 형태), 실패 시 null */

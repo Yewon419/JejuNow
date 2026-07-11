@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { type Alternative, findAlternatives } from "@/lib/alternatives";
-import { fetchAlternativesLive, simulateSchedule } from "@/lib/api";
+import { type RouteData, fetchAlternativesLive, fetchRoute, simulateSchedule } from "@/lib/api";
 import { RouteView } from "./RouteView";
 import {
   HORIZON_END,
@@ -35,6 +35,8 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   const [liveAlts, setLiveAlts] = useState<Map<string, Alternative[]>>(new Map());
   // 인앱 경로 보기 (카카오내비 API → 우리 지도)
   const [routeView, setRouteView] = useState<{ from: Spot; to: Spot } | null>(null);
+  // 연속 슬롯 간 거리·시간 — 경로 칩에 미리 표시 (fetchRoute 캐시로 RouteView와 공유)
+  const [routeMeta, setRouteMeta] = useState<Map<string, RouteData>>(new Map());
 
   const spotById = useMemo(() => new Map(spots.map((s) => [s.spot_id, s])), [spots]);
 
@@ -110,6 +112,34 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
     };
   }, [date, slots, spotById]);
 
+  // 연속 슬롯 쌍의 경로 메타 로드 (슬롯 변경 시)
+  useEffect(() => {
+    let cancelled = false;
+    const pairs: [Spot, Spot][] = [];
+    for (let i = 1; i < slots.length; i += 1) {
+      const a = spotById.get(slots[i - 1].spotId);
+      const b = spotById.get(slots[i].spotId);
+      if (a && b) pairs.push([a, b]);
+    }
+    if (pairs.length === 0) return;
+    Promise.all(
+      pairs.map(async ([a, b]) => {
+        const r = await fetchRoute(a, b);
+        return [`${a.spot_id}:${b.spot_id}`, r] as const;
+      }),
+    ).then((entries) => {
+      if (cancelled) return;
+      const m = new Map<string, RouteData>();
+      for (const [k, r] of entries) {
+        if (r) m.set(k, r);
+      }
+      setRouteMeta(m);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [slots, spotById]);
+
   const filteredSpots = useMemo(() => {
     const q = query.trim();
     const pool = q ? spots.filter((s) => s.name.includes(q)) : spots.filter((s) => s.image_url);
@@ -173,6 +203,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
             : [];
           // 직전 슬롯 → 현재 슬롯 이동 경로 (인앱 지도, 실패 시 카카오맵 링크 폴백)
           const prevSpot = idx > 0 ? spotById.get(slots[idx - 1].spotId) : undefined;
+          const meta = prevSpot ? routeMeta.get(`${prevSpot.spot_id}:${spot.spot_id}`) : undefined;
           return (
             <li key={slot.hour} className="relative">
               {prevSpot ? (
@@ -186,6 +217,12 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
                   </svg>
                   경로 보기
+                  {meta ? (
+                    <span className="font-medium text-dim">
+                      · {(meta.distance_m / 1000).toFixed(1)}km · 약{" "}
+                      {Math.max(1, Math.round(meta.duration_s / 60))}분
+                    </span>
+                  ) : null}
                 </button>
               ) : null}
             <div className="relative">

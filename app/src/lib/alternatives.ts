@@ -3,7 +3,7 @@ import type { Congestion, Spot } from "./types";
 
 export type Alternative = { spot: Spot; congestion: Congestion; distanceKm: number };
 
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const rad = Math.PI / 180;
   const a =
     Math.sin(((lat2 - lat1) * rad) / 2) ** 2 +
@@ -28,14 +28,14 @@ export function findAlternatives(
       distanceKm: Math.round(haversineKm(origin.lat, origin.lng, s.lat, s.lng) * 10) / 10,
     });
   }
-  // 동일 cat2 내 수요압력 하위 30% → 비추정·저압력·근거리 우선
+  // 동일 cat2 내 수요압력 하위 30% → 비추정·근거리 우선 (여유 풀 안에서는 가까운 곳이 실용적)
   out.sort((a, b) => a.congestion.pressure - b.congestion.pressure);
   const bottom = out.slice(0, Math.max(1, Math.round(out.length * 0.3)));
   bottom.sort(
     (a, b) =>
       Number(a.congestion.is_imputed) - Number(b.congestion.is_imputed) ||
-      a.congestion.pressure - b.congestion.pressure ||
-      a.distanceKm - b.distanceKm,
+      a.distanceKm - b.distanceKm ||
+      a.congestion.pressure - b.congestion.pressure,
   );
   return bottom.slice(0, max);
 }

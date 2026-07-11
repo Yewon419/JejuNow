@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { FeatureCourseCard } from "@/components/FeatureCourseCard";
 import { LevelBadge } from "@/components/LevelBadge";
-import { SpotCard } from "@/components/SpotCard";
+import { QuietNearby } from "@/components/QuietNearby";
 import { nowKstHourClamped, todayInHorizon } from "@/lib/constants";
 import { fetchCongestion, fetchSpots, fetchWeatherMonth } from "@/lib/supabase";
 import type { Congestion, Spot } from "@/lib/types";
@@ -21,14 +20,6 @@ export default async function DashboardPage() {
   const withSpot = (c: Congestion) => ({ c, s: spotById.get(c.spot_id) });
   const hasImg = (x: { c: Congestion; s: Spot | undefined }): x is { c: Congestion; s: Spot } =>
     Boolean(x.s?.image_url);
-
-  const calm = congestion
-    .filter((c) => !c.is_imputed && c.level <= 2)
-    .map(withSpot)
-    .filter(hasImg)
-    .sort((a, b) => a.c.pressure - b.c.pressure);
-  const feature = calm[0];
-  const calmRest = calm.slice(1, 7);
 
   const busy = congestion
     .filter((c) => !c.is_imputed && c.level >= 3)
@@ -83,36 +74,7 @@ export default async function DashboardPage() {
         </section>
       ) : null}
 
-      {feature ? (
-        <section aria-labelledby="feature-heading">
-          <h2 id="feature-heading" className="mb-3 text-base font-bold text-ink">
-            지금 가장 한적한 코스
-          </h2>
-          <FeatureCourseCard spot={feature.s} congestion={feature.c} />
-        </section>
-      ) : null}
-
-      <section aria-labelledby="calm-heading" className="pb-4">
-        <div className="mb-3 flex items-baseline justify-between">
-          <h2 id="calm-heading" className="text-base font-bold text-ink">
-            지금 한적한 스팟
-          </h2>
-          <Link href="/map" className="text-sm font-semibold text-primary">
-            지도로 보기
-          </Link>
-        </div>
-        {calmRest.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {calmRest.map(({ c, s }) => (
-              <SpotCard key={s.spot_id} spot={s} congestion={c} />
-            ))}
-          </div>
-        ) : (
-          <p className="rounded-card bg-card p-4 text-sm text-dim shadow-card">
-            데이터 준비 중입니다. 잠시 후 다시 확인해 주세요.
-          </p>
-        )}
-      </section>
+      <QuietNearby spots={spots} congestion={congestion} />
     </main>
   );
 }
