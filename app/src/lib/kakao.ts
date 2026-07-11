@@ -10,6 +10,7 @@ export interface KakaoMapObj {
 
 export interface KakaoCustomOverlay {
   setMap(map: KakaoMapObj | null): void;
+  setZIndex(zIndex: number): void;
 }
 
 export interface KakaoMapsApi {
@@ -23,6 +24,9 @@ export interface KakaoMapsApi {
     clickable?: boolean;
     zIndex?: number;
   }) => KakaoCustomOverlay;
+  event: {
+    addListener(target: KakaoMapObj, type: "click", handler: () => void): void;
+  };
 }
 
 declare global {

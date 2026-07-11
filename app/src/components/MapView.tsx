@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -12,10 +13,10 @@ import {
   LEVEL_COLOR,
   catLabel,
 } from "@/lib/constants";
-import type { KakaoMapObj } from "@/lib/kakao";
-import { fetchCongestionClient } from "@/lib/supabaseClient";
+import type { KakaoCustomOverlay, KakaoMapObj } from "@/lib/kakao";
+import { fetchCongestionClient, fetchSpotDayClient } from "@/lib/supabaseClient";
 import type { Congestion, Spot } from "@/lib/types";
-import { LevelBadge } from "./LevelBadge";
+import { LevelBadge, PressureBar } from "./LevelBadge";
 
 const JEJU_CENTER = { lat: 33.37, lng: 126.53 };
 
@@ -39,7 +40,13 @@ export function MapView({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<KakaoMapObj | null>(null);
+  const overlaysRef = useRef<Map<number, KakaoCustomOverlay>>(new Map());
   const [overlayNodes, setOverlayNodes] = useState<Map<number, HTMLDivElement> | null>(null);
+  // 선택 스팟의 일중 혼잡 곡선 (spotId를 함께 저장해 스팟 전환 시 이전 곡선 오표시 방지)
+  const [dayCurve, setDayCurve] = useState<{
+    spotId: number;
+    rows: (Congestion & { hour: number })[];
+  } | null>(null);
 
   const jsKey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
 
@@ -71,15 +78,19 @@ export function MapView({
         level: 10,
       });
       mapRef.current = map;
+      // 지도 배경 탭 = 상세 시트 닫기 (네이버 지도 관례)
+      kakao.maps.event.addListener(map, "click", () => setSelected(null));
       const nodes = new Map<number, HTMLDivElement>();
       for (const spot of spots) {
         const node = document.createElement("div");
-        new kakao.maps.CustomOverlay({
+        const overlay = new kakao.maps.CustomOverlay({
           position: new kakao.maps.LatLng(spot.lat, spot.lng),
           content: node,
           yAnchor: 0.5,
           clickable: true,
-        }).setMap(map);
+        });
+        overlay.setMap(map);
+        overlaysRef.current.set(spot.spot_id, overlay);
         nodes.set(spot.spot_id, node);
       }
       setOverlayNodes(nodes);
@@ -88,6 +99,25 @@ export function MapView({
   }, [spots]);
 
   const selectedCongestion = selected ? congestion.get(selected.spot_id) : undefined;
+
+  // 선택 스팟: 마커를 최상단으로 + 일중 혼잡 곡선 로드
+  useEffect(() => {
+    if (!selected) return;
+    const overlay = overlaysRef.current.get(selected.spot_id);
+    overlay?.setZIndex(10);
+    let cancelled = false;
+    fetchSpotDayClient(selected.spot_id, date)
+      .then((rows) => {
+        if (!cancelled) setDayCurve({ spotId: selected.spot_id, rows });
+      })
+      .catch(() => {
+        if (!cancelled) setDayCurve(null);
+      });
+    return () => {
+      cancelled = true;
+      overlay?.setZIndex(0);
+    };
+  }, [selected, date]);
 
   // 마커는 Kakao CustomOverlay 노드에 포털로 렌더 — 혼잡도 변경 시 색만 리렌더
   const markerPortals =
@@ -98,7 +128,8 @@ export function MapView({
       const c = congestion.get(spot.spot_id);
       const hidden = c ? c.is_imputed && !showImputed : false;
       const color = c ? (LEVEL_COLOR[c.level] ?? "#475569") : "#475569";
-      const size = c && c.level >= 3 ? 18 : 14;
+      const isSelected = selected?.spot_id === spot.spot_id;
+      const size = (c && c.level >= 3 ? 18 : 14) + (isSelected ? 8 : 0);
       return createPortal(
         hidden ? null : (
           <button
@@ -109,12 +140,15 @@ export function MapView({
               width: size,
               height: size,
               borderRadius: 9999,
-              border: "2px solid #ffffff",
-              boxShadow: "0 1px 4px rgb(16 33 58 / 0.35)",
+              border: isSelected ? "3px solid #ffffff" : "2px solid #ffffff",
+              boxShadow: isSelected
+                ? `0 0 0 3px ${color}55, 0 2px 8px rgb(16 33 58 / 0.45)`
+                : "0 1px 4px rgb(16 33 58 / 0.35)",
               background: color,
               cursor: "pointer",
               display: "block",
               padding: 0,
+              transition: "width 0.15s, height 0.15s, box-shadow 0.15s",
             }}
           />
         ),
@@ -232,39 +266,119 @@ export function MapView({
         ) : null}
 
         {selected ? (
-          <div className="absolute inset-x-3 bottom-3 z-10 rounded-card border border-line bg-surface/95 p-4 backdrop-blur">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-base font-bold text-ink">{selected.name}</p>
-                <p className="text-xs text-dim">
-                  {selected.region} · {catLabel(selected.cat2)}
-                </p>
+          <section
+            aria-label={`${selected.name} 상세 정보`}
+            className="absolute inset-x-0 bottom-0 z-10 animate-sheet-up rounded-t-3xl border-t border-line bg-surface shadow-[0_-8px_30px_rgb(16_33_58_/_0.12)]"
+          >
+            <div className="mx-auto mt-2.5 h-1 w-9 rounded-full bg-line" aria-hidden />
+            <div className="max-h-[46dvh] overflow-y-auto px-5 pb-5 pt-3">
+              <div className="flex items-start gap-3.5">
+                {selected.image_url ? (
+                  <div className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-2xl">
+                    <Image
+                      src={selected.image_url}
+                      alt=""
+                      fill
+                      sizes="72px"
+                      className="object-cover"
+                    />
+                  </div>
+                ) : null}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="truncate text-lg font-bold text-ink">{selected.name}</p>
+                    <button
+                      type="button"
+                      onClick={() => setSelected(null)}
+                      aria-label="닫기"
+                      className="-mr-1 -mt-0.5 shrink-0 cursor-pointer rounded-full p-1 text-dim hover:text-ink"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p className="text-xs font-medium text-primary">
+                    {catLabel(selected.cat2)} <span className="text-dim">· {selected.region}</span>
+                  </p>
+                  {selected.addr ? (
+                    <p className="mt-1 truncate text-xs text-dim">{selected.addr}</p>
+                  ) : null}
+                  {selected.opening_hours ? (
+                    <p className="mt-0.5 truncate text-xs text-dim">🕐 {selected.opening_hours}</p>
+                  ) : null}
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setSelected(null)}
-                aria-label="닫기"
-                className="cursor-pointer rounded-full p-1 text-dim hover:text-ink"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
-              </button>
+
+              <div className="mt-4 rounded-2xl bg-bg p-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-dim">
+                    {date.slice(5).replace("-", ".")} {hour}시 예측 혼잡도
+                  </span>
+                  {selectedCongestion ? (
+                    <LevelBadge
+                      level={selectedCongestion.level}
+                      imputed={selectedCongestion.is_imputed}
+                    />
+                  ) : (
+                    <span className="text-xs text-dim">데이터 없음</span>
+                  )}
+                </div>
+                {selectedCongestion ? (
+                  <div className="mt-2.5">
+                    <PressureBar
+                      pressure={selectedCongestion.pressure}
+                      level={selectedCongestion.level}
+                    />
+                  </div>
+                ) : null}
+
+                {dayCurve && dayCurve.spotId === selected.spot_id && dayCurve.rows.length > 0 ? (
+                  <div className="mt-3.5">
+                    <p className="mb-1.5 text-[11px] text-dim">시간대별 (9~20시)</p>
+                    <div className="flex h-10 items-end gap-1" aria-hidden>
+                      {dayCurve.rows.map((r) => (
+                        <button
+                          key={r.hour}
+                          type="button"
+                          tabIndex={-1}
+                          onClick={() => setHour(r.hour)}
+                          className="flex-1 cursor-pointer rounded-t-sm"
+                          style={{
+                            height: `${Math.max(8, r.pressure)}%`,
+                            backgroundColor: LEVEL_COLOR[r.level] ?? "#475569",
+                            opacity: r.hour === hour ? 1 : 0.35,
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <div className="mt-1 flex justify-between text-[10px] text-dim" aria-hidden>
+                      <span>9시</span>
+                      <span>14시</span>
+                      <span>20시</span>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="mt-4 flex gap-2.5">
+                <Link
+                  href={`/spots/${selected.spot_id}`}
+                  className="flex-1 rounded-xl bg-cta py-3 text-center text-sm font-bold text-on-cta"
+                >
+                  상세 · 대안 보기
+                </Link>
+                <a
+                  href={`https://map.kakao.com/link/to/${encodeURIComponent(selected.name)},${selected.lat},${selected.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl border border-line bg-card px-4 py-3 text-sm font-semibold text-ink"
+                >
+                  길찾기
+                </a>
+              </div>
             </div>
-            <div className="mt-3 flex items-center justify-between">
-              {selectedCongestion ? (
-                <LevelBadge level={selectedCongestion.level} imputed={selectedCongestion.is_imputed} />
-              ) : (
-                <span className="text-xs text-dim">해당 시간 데이터 없음</span>
-              )}
-              <Link
-                href={`/spots/${selected.spot_id}`}
-                className="rounded-lg bg-cta px-4 py-2 text-sm font-bold text-on-cta"
-              >
-                상세 · 대안 보기
-              </Link>
-            </div>
-          </div>
+          </section>
         ) : null}
       </div>
     </div>

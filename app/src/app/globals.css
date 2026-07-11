@@ -24,6 +24,19 @@
   --radius-card: 1.25rem;
 
   --shadow-card: 0 1px 2px rgb(16 33 58 / 0.04), 0 8px 24px rgb(16 33 58 / 0.06);
+
+  /* 지도 상세 시트 슬라이드업 (reduced-motion은 아래 미디어쿼리가 전역 무효화) */
+  --animate-sheet-up: sheet-up 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  @keyframes sheet-up {
+    from {
+      transform: translateY(1.5rem);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 }
 
 html {
