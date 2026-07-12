@@ -20,7 +20,11 @@ congestion_pred 롤링 적재 확인(07-11~, 주간 갱신). 로컬 API 실측: 
 - Railway 탈락($5/월 고정) → `render.yaml`(무료) + UptimeRobot 5분 핑 전략
 
 **남은 것 (전부 선택/나중):** iOS 스토어 제출(Apple Developer $99·심사) /
-deploy_vercel.ps1 REST→CLI 방식 수정 / 최종 제출물 안내문 도착 시 산출물 보정
+최종 제출물 안내문 도착 시 산출물 보정
+
+**완료 기록 (2026-07-12, deploy_vercel.ps1):** REST→CLI 전환은 8a3d11b에서 이미
+반영돼 있었음(잔여 표시가 stale). 전환 후 첫 E2E 실행으로 검증 — env 5종
+등록(production·preview)·env pull 무결성 통과·프로덕션 배포·전 라우트 200.
 
 **완료 기록 (2026-07-12, 온보딩 실사진):** 그라데이션 카드 2장 → TourAPI 실사진
 (즉흥=노을해안로 노을, 계획=광치기해변 새벽 일출 — "밤하늘" 컨셉은 TourAPI에 야간
