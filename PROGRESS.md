@@ -19,8 +19,13 @@ congestion_pred 롤링 적재 확인(07-11~, 주간 갱신). 로컬 API 실측: 
 - 프론트 `/simulate`·`/alternatives` 라이브 연결 + Supabase 폴백 (`app/src/lib/api.ts`)
 - Railway 탈락($5/월 고정) → `render.yaml`(무료) + UptimeRobot 5분 핑 전략
 
-**남은 것 (전부 선택/나중):** 온보딩 실사진 교체 / iOS 스토어 제출(Apple Developer $99·심사) /
+**남은 것 (전부 선택/나중):** iOS 스토어 제출(Apple Developer $99·심사) /
 deploy_vercel.ps1 REST→CLI 방식 수정 / 최종 제출물 안내문 도착 시 산출물 보정
+
+**완료 기록 (2026-07-12, 온보딩 실사진):** 그라데이션 카드 2장 → TourAPI 실사진
+(즉흥=노을해안로 노을, 계획=광치기해변 새벽 일출 — "밤하늘" 컨셉은 TourAPI에 야간
+사진이 없어 새벽 일출로 조정). 첫 화면 무중단을 위해 외부 핫링크 대신
+`app/public/onboarding/` 번들. 로컬 시각 검증(기본+375px) 완료.
 
 **무중단 체계 (심사 10~11월 대비, 2026-07-11 완성):**
 - UptimeRobot 5분 핑 → `/keepalive`(매 핑 DB 쿼리 + 예측기 워밍) — 21분 유휴 실측으로
