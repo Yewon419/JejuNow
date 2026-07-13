@@ -12,6 +12,12 @@ export type Spot = {
   region: string;
 };
 
+/** 상세 페이지 전용 — 목록 조회는 페이로드 절약을 위해 overview·tel을 select하지 않는다 */
+export type SpotDetail = Spot & {
+  overview: string | null;
+  tel: string | null;
+};
+
 export type Congestion = {
   spot_id: number;
   pressure: number;

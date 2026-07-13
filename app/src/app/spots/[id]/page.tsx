@@ -2,12 +2,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LevelBadge } from "@/components/LevelBadge";
+import { SpotOverview } from "@/components/SpotOverview";
 import { findAlternatives } from "@/lib/alternatives";
 import { LEVEL_COLOR, catLabel, cleanHours, todayInHorizon } from "@/lib/constants";
 import { fetchCongestion, fetchSpotById, fetchSpotDay, fetchSpots } from "@/lib/supabase";
 import type { Congestion, Spot } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+/** tel: 링크용 — 숫자·+·- 만 남긴다. 대표번호 외 부가 텍스트가 섞인 값이면 링크 생략 */
+function telHref(tel: string): string | undefined {
+  const digits = tel.replace(/[^0-9+-]/g, "");
+  return /^[+]?[0-9][0-9-]{7,}$/.test(digits) ? `tel:${digits}` : undefined;
+}
 
 export default async function SpotDetailPage({
   params,
@@ -79,10 +86,24 @@ export default async function SpotDetailPage({
           {spot.opening_hours ? (
             <p className="mt-1 text-sm text-white/80">운영시간: {cleanHours(spot.opening_hours)}</p>
           ) : null}
+          {spot.tel ? (
+            <p className="mt-1 text-sm text-white/80">
+              전화:{" "}
+              {telHref(spot.tel) ? (
+                <a href={telHref(spot.tel)} className="underline underline-offset-2">
+                  {spot.tel}
+                </a>
+              ) : (
+                spot.tel
+              )}
+            </p>
+          ) : null}
         </header>
       </div>
 
       <div className="relative -mt-6 space-y-8 rounded-t-3xl bg-bg px-5 pt-8">
+
+        {spot.overview ? <SpotOverview text={spot.overview} /> : null}
 
         <section aria-labelledby="timeline-heading">
           <h2 id="timeline-heading" className="mb-1 text-lg font-bold text-ink">

@@ -1,5 +1,5 @@
 // Supabase PostgREST 읽기 전용 클라이언트 (anon 키, RLS=select만 허용)
-import type { Congestion, Spot, WeatherMonth } from "./types";
+import type { Congestion, Spot, SpotDetail, WeatherMonth } from "./types";
 
 // 직접 멤버 접근만 빌드타임 인라인됨 (process.env[동적키] 금지)
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -25,7 +25,7 @@ async function rest<T>(path: string, revalidateSec: number): Promise<T> {
 }
 
 /** TourAPI 구형 리소스의 http URL을 https로 정규화 — 혼합콘텐츠·remotePatterns(https만) 차단 회피 */
-function normalizeSpot(s: Spot): Spot {
+function normalizeSpot<T extends Spot>(s: T): T {
   return s.image_url?.startsWith("http://")
     ? { ...s, image_url: s.image_url.replace(/^http:\/\//, "https://") }
     : s;
@@ -54,9 +54,9 @@ export async function fetchSpotDay(spotId: number, date: string): Promise<(Conge
   );
 }
 
-export async function fetchSpotById(spotId: number): Promise<Spot | null> {
-  const rows = await rest<Spot[]>(
-    `spots?select=spot_id,name,cat1,cat2,lat,lng,addr,opening_hours,image_url,is_outdoor,region&spot_id=eq.${spotId}`,
+export async function fetchSpotById(spotId: number): Promise<SpotDetail | null> {
+  const rows = await rest<SpotDetail[]>(
+    `spots?select=spot_id,name,cat1,cat2,lat,lng,addr,opening_hours,image_url,is_outdoor,region,overview,tel&spot_id=eq.${spotId}`,
     3600,
   );
   return rows[0] ? normalizeSpot(rows[0]) : null;

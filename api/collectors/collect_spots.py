@@ -7,13 +7,17 @@ areaBasedList2를 **법정동 코드(lDongRegnCd=50)**로 조회한다 — legac
 
 수집 대상: 관광지(12)·문화시설(14)·레포츠(28). detailIntro2로 운영시간 보강.
 firstimage 없는 스팟은 detailImage2(originimgurl 첫 장)로 이미지 보강 — 원천에도 없으면 null 유지.
+소개·전화(detailCommon2)는 DB에 overview 없는 스팟만 보강(신규 스팟용) —
+초기 백필은 backfill_overview.py (운영시간 801콜과 합치면 일일 쿼터 1000 초과).
 
 실행: .venv\\Scripts\\python.exe -m api.collectors.collect_spots
 """
 
 from __future__ import annotations
 
+import html
 import logging
+import re
 import time
 from dataclasses import dataclass
 
@@ -76,6 +80,20 @@ def _str_field(item: dict[str, object], key: str) -> str | None:
     if isinstance(value, str) and value.strip():
         return value.strip()
     return None
+
+
+_BR_RE = re.compile(r"<br\s*/?>", re.IGNORECASE)
+_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _clean_text(raw: str | None) -> str | None:
+    """overview의 HTML 잔재 정리 — <br>→개행, 나머지 태그 제거, 엔티티 복원."""
+    if raw is None:
+        return None
+    text = _BR_RE.sub("\n", raw)
+    text = _TAG_RE.sub("", text)
+    text = html.unescape(text).strip()
+    return text or None
 
 
 def _base_params(service_key: str) -> dict[str, str]:
@@ -212,6 +230,26 @@ def fetch_opening_hours(
     return _str_field(item, USETIME_FIELD[spot.content_type_id])
 
 
+def fetch_overview_tel(
+    session: requests.Session, service_key: str, content_id: str, name: str
+) -> tuple[str | None, str | None]:
+    """detailCommon2의 (overview, tel) — 원천에 없으면 (None, None)."""
+    params = _base_params(service_key) | {"contentId": content_id}
+    log_params = {k: v for k, v in params.items() if k != "serviceKey"}
+    try:
+        payload = get_json(session, f"{BASE_URL}/detailCommon2", params, log_params=log_params)
+        items, _ = _response_items(payload, f"detailCommon2[{content_id}]")
+    except ExternalApiError as exc:
+        if "quota" in str(exc).lower() or "status=429" in str(exc):
+            raise QuotaExceededError(str(exc)) from exc
+        logger.warning("소개 조회 실패(계속 진행): %s — %s", name, exc)
+        return None, None
+    if not items:
+        return None, None
+    item = as_dict(items[0], "common item")
+    return _clean_text(_str_field(item, "overview")), _str_field(item, "tel")
+
+
 def fetch_first_image(
     session: requests.Session, service_key: str, spot: Spot
 ) -> str | None:
@@ -250,15 +288,27 @@ def main() -> None:
         raise RuntimeError(f"스팟 수가 비정상적으로 적음: {len(spots)} (기대 ~800)")
 
     db = SupabaseRest(settings.supabase_url, settings.supabase_service_role_key)
-    # 쿼터 소진 등으로 이번에 못 받은 운영시간·이미지는 기존 DB 값 보존
+    # 쿼터 소진 등으로 이번에 못 받은 운영시간·이미지·소개는 기존 DB 값 보존
     existing_hours: dict[str, str] = {}
     existing_images: dict[str, str] = {}
-    for row in db.select_all("spots", {"select": "content_id,opening_hours,image_url"}):
-        cid, oh, img = row.get("content_id"), row.get("opening_hours"), row.get("image_url")
-        if isinstance(cid, str) and isinstance(oh, str):
+    existing_overview: dict[str, str] = {}
+    existing_tel: dict[str, str] = {}
+    for row in db.select_all(
+        "spots", {"select": "content_id,opening_hours,image_url,overview,tel"}
+    ):
+        cid = row.get("content_id")
+        if not isinstance(cid, str):
+            continue
+        oh, img = row.get("opening_hours"), row.get("image_url")
+        ov, tel = row.get("overview"), row.get("tel")
+        if isinstance(oh, str):
             existing_hours[cid] = oh
-        if isinstance(cid, str) and isinstance(img, str):
+        if isinstance(img, str):
             existing_images[cid] = img
+        if isinstance(ov, str):
+            existing_overview[cid] = ov
+        if isinstance(tel, str):
+            existing_tel[cid] = tel
 
     logger.info("운영시간 보강 시작 (%d건, detailIntro2)", len(spots))
     hours: dict[str, str | None] = {}
@@ -298,6 +348,29 @@ def main() -> None:
         time.sleep(DETAIL_DELAY_SEC)
     logger.info("이미지 보강 결과: %d/%d건 확보", len(backfilled), len(need_image))
 
+    # 소개·전화 보강 — DB에 overview 없는 스팟만(대부분 신규 스팟, 초기 백필은 backfill_overview)
+    need_common = [s for s in spots if s.content_id not in existing_overview]
+    logger.info("소개 보강 시작 (%d건, detailCommon2)", len(need_common))
+    overviews: dict[str, str] = {}
+    tels: dict[str, str] = {}
+    for i, spot in enumerate(need_common, 1):
+        if quota_hit:
+            break
+        try:
+            ov, tel = fetch_overview_tel(
+                session, settings.data_go_kr_key, spot.content_id, spot.name
+            )
+        except QuotaExceededError as exc:
+            quota_hit = True
+            logger.warning("쿼터 소진 — 소개 보강 중단(%d/%d): %s", i, len(need_common), exc)
+            break
+        if ov:
+            overviews[spot.content_id] = ov
+        if tel:
+            tels[spot.content_id] = tel
+        time.sleep(DETAIL_DELAY_SEC)
+    logger.info("소개 보강 결과: %d/%d건 확보", len(overviews), len(need_common))
+
     rows: list[dict[str, object]] = [
         {
             "content_id": s.content_id,
@@ -312,6 +385,8 @@ def main() -> None:
             "image_url": s.image_url
             or backfilled.get(s.content_id)
             or existing_images.get(s.content_id),
+            "overview": overviews.get(s.content_id) or existing_overview.get(s.content_id),
+            "tel": tels.get(s.content_id) or existing_tel.get(s.content_id),
             "is_outdoor": _is_outdoor(s.cat2),
             "region": s.region,
         }
