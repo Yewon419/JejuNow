@@ -31,7 +31,7 @@ export function SpotOverview({ text }: { text: string }) {
             {expanded ? "접기" : "더보기"}
           </button>
         ) : null}
-        <p className="mt-2 text-xs text-dim/80">출처: 한국관광공사 TourAPI</p>
+        {/* 출처 표기는 설정 > 자주 묻는 질문으로 모았다 */}
       </div>
     </section>
   );

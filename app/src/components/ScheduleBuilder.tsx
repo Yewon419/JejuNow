@@ -174,9 +174,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
       <CoachMark id="schedule" steps={SCHEDULE_COACH} />
       <header>
         <h1 className="text-2xl font-bold text-ink">내 여행</h1>
-        <p className="mt-1 text-sm text-dim">
-          날짜와 스팟을 고르면 슬롯별 예측 혼잡도를 점검하고 대안을 제안해요.
-        </p>
+        {/* 사용법 설명은 코치마크가 대신한다 (중복 제거) */}
         <input
           type="date"
           aria-label="여행 날짜"

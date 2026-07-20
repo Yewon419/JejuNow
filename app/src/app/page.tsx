@@ -19,10 +19,8 @@ export default function OnboardingPage() {
 
       <TravelerTypeSelect />
 
-      <p className="pt-6 text-center text-xs leading-relaxed text-dim/80">
-        혼잡도는 한국관광 데이터랩 인기 점유율(수요 프록시) 예측 × 일중 프로파일 합성값으로,
-        실측 혼잡도가 아닙니다.
-      </p>
+      {/* 계산 방식 설명은 설정 > 자주 묻는 질문으로 옮겼다 (첫 화면에 전문용어를 두지 않는다) */}
+      <p className="pt-6 text-center text-xs text-dim/80">혼잡도는 예측값이에요</p>
     </main>
     </OnboardingGate>
   );

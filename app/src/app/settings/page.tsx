@@ -26,51 +26,36 @@ export default function SettingsPage() {
         <SettingsActions />
       </div>
 
-      <section className="mt-8" aria-labelledby="about-heading">
-        <h2 id="about-heading" className="mb-3 text-base font-bold text-ink">
-          데이터와 안내
+      <section className="mt-8" aria-labelledby="info-heading">
+        <h2 id="info-heading" className="mb-3 text-base font-bold text-ink">
+          안내
         </h2>
         <div className="space-y-3">
-          <div className="rounded-card bg-card p-4 shadow-card">
-            <p className="font-semibold text-ink">혼잡도는 예측값입니다</p>
-            <p className="mt-1 text-sm leading-relaxed text-dim">
-              현장에서 센 실제 인원이 아니라 공개 통계를 학습해 예측한 값입니다. 네이버 데이터랩의
-              관광지 검색 수요와 기상 데이터를 학습해 관광지별 수요를 예측하고, 여기에 시간대별
-              방문 패턴을 결합해 산출합니다. 실제 상황과 다를 수 있어요.
-            </p>
-          </div>
+          <Link
+            href="/settings/faq"
+            className="flex items-center justify-between gap-3 rounded-card bg-card p-4 shadow-card transition-transform active:scale-[0.99]"
+          >
+            <span>
+              <span className="block font-semibold text-ink">자주 묻는 질문</span>
+              <span className="mt-0.5 block text-sm text-dim">
+                혼잡도 계산 방식, 「추정」 표시, 데이터 출처
+              </span>
+            </span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 shrink-0 text-dim">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+          </Link>
 
-          <div className="rounded-card bg-card p-4 shadow-card">
-            <p className="font-semibold text-ink">일부는 평균값으로 대체합니다</p>
-            <p className="mt-1 text-sm leading-relaxed text-dim">
-              원천 데이터가 없는 관광지는 같은 유형의 평균으로 채우고, 그런 경우 「추정」으로
-              따로 표시합니다.
-            </p>
-          </div>
-
-          <div className="rounded-card bg-card p-4 shadow-card">
-            <p className="font-semibold text-ink">출처</p>
-            <p className="mt-1 text-sm leading-relaxed text-dim">
-              관광지 정보는 한국관광공사 TourAPI, 수요 데이터는 네이버 데이터랩, 기상 데이터는
-              기상청, 지도와 길찾기는 카카오를 이용합니다.
-            </p>
-          </div>
+          <Link
+            href="/privacy"
+            className="flex items-center justify-between rounded-card bg-card p-4 shadow-card transition-transform active:scale-[0.99]"
+          >
+            <span className="font-semibold text-ink">개인정보 처리방침</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 text-dim">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+          </Link>
         </div>
-      </section>
-
-      <section className="mt-8" aria-labelledby="policy-heading">
-        <h2 id="policy-heading" className="mb-3 text-base font-bold text-ink">
-          약관 및 정책
-        </h2>
-        <Link
-          href="/privacy"
-          className="flex items-center justify-between rounded-card bg-card p-4 shadow-card transition-transform active:scale-[0.99]"
-        >
-          <span className="font-semibold text-ink">개인정보 처리방침</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 text-dim">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-          </svg>
-        </Link>
       </section>
 
       <p className="mt-8 text-center text-xs leading-relaxed text-dim/80">

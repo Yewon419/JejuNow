@@ -120,10 +120,8 @@ export default async function SpotDetailPage({
           <h2 id="timeline-heading" className="mb-1 text-lg font-bold text-ink">
             오늘의 시간대별 혼잡 예측
           </h2>
-          <p className="mb-4 text-xs text-dim">
-            {date} · 월 수요예측 × 일중 프로파일 합성값 (실측 아님)
-            {day[0]?.is_imputed ? " · 카테고리 평균 기반 추정치" : ""}
-          </p>
+          {/* 계산 방식은 설정 > 자주 묻는 질문으로. 여기엔 예측값이라는 사실만 남긴다 */}
+          <p className="mb-4 text-xs text-dim">{date} · 예측값</p>
           {day.length > 0 ? (
             <>
               <div className="flex h-36 items-end gap-1" role="img" aria-label="시간대별 혼잡도 막대그래프">
@@ -167,9 +165,7 @@ export default async function SpotDetailPage({
           <h2 id="alt-heading" className="mb-1 text-lg font-bold text-ink">
             비슷한데 더 한적한 곳
           </h2>
-          <p className="mb-4 text-xs text-dim">
-            같은 카테고리({catLabel(spot.cat2)}) · {refHour}시 기준
-          </p>
+          <p className="mb-4 text-xs text-dim">{refHour}시 기준</p>
           <ul className="space-y-2">
             {alternatives.map((alt) => (
               <li key={alt.spot.spot_id}>
