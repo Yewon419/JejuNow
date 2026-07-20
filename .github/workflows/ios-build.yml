@@ -31,17 +31,16 @@ jobs:
         run: |
           mkdir -p ~/private_keys
           echo -n "$APPSTORE_API_PRIVATE_KEY" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.APPSTORE_API_KEY_ID }}.p8
-      - name: Archive (cloud signing)
+      # 아카이브는 서명 없이 생성한다. 자동 서명은 archive 단계에서 개발용 프로파일을
+      # 요구하는데, CI에는 등록된 기기가 없어 발급이 불가능하다. 배포 서명은 export가 한다.
+      - name: Archive (unsigned)
         working-directory: app/ios/App
         run: |
           xcodebuild -project App.xcodeproj -scheme App -configuration Release \
             -destination 'generic/platform=iOS' -archivePath build/App.xcarchive archive \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_API_KEY_ID }}.p8 \
-            -authenticationKeyID ${{ secrets.APPSTORE_API_KEY_ID }} \
-            -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }} \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
             MARKETING_VERSION=1.0.0 \
             CURRENT_PROJECT_VERSION=${{ github.run_number }}
