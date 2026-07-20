@@ -46,6 +46,31 @@ iOS CI 함정 3건 (전부 실패 후 수정):
    텍스트 입력 성격 필드를 16px로(검색창·날짜 2곳·시간 select). 체크박스·range는 무관
    ⚠ 둘 다 **브라우저에서는 재현되지 않는 iOS 고유 동작** — 실기기 검증 없이는 못 잡는다
 
+**iOS 실기기 피드백 3~4건차 + 로딩 개선 (2026-07-20, TestFlight 1.0.0(7)):**
+- 하단바가 떠 보임(빌드 5 회귀) → **인셋을 바깥 래퍼에 주면 배경 있는 자식이 통째로
+  밀려 올라간다.** 네이티브 UITabBar는 `bottom:0`에 붙은 채 높이만 커지고(콘텐츠 49pt +
+  인셋 34pt = 83pt) 홈 인디케이터를 배경으로 덮는다. 인셋을 배경 요소 자신의 padding으로
+  이동. `backdrop-blur`는 fixed 요소에서 iOS 스크롤 부하가 커 불투명 배경으로 교체
+- 상단 검은 띠 → `capacitor.config.ts`의 `contentInset: "automatic"`이 원인.
+  이 값은 iOS `contentInsetAdjustmentBehavior`에 매핑되고 **기본값은 `never`**.
+  viewport-fit=cover로 CSS가 이미 env()로 인셋을 처리하는데 UIKit이 또 넣어 이중 처리되며
+  스크롤뷰 배경(검정)이 드러났다. `never`로 되돌리고 각 화면 상단에 safe-area-inset-top 반영
+- 이미지: 썸네일 2곳(상세 대안 56px·대시보드 붐빔 96px)이 CSS `backgroundImage`로 원본을
+  직접 받고 있었다(최대 594KB 1장). next/image 교체 → **상세 이미지 1,022KB → 41KB**
+- 폰트: CSS `@import`는 이 파일 수신 후에야 발견돼 직렬 대기(우리 CSS → jsdelivr CSS →
+  폰트). layout의 `<link>`+`preconnect`로 이동
+
+**캐싱 = ISR 전환 (2026-07-20):**
+- `force-dynamic`이 **모든 fetch를 no-store로 덮어써**(Next 문서 명시) `supabase.ts`에
+  걸어둔 revalidate(spots 3600·congestion 1800·weather 86400)가 전부 무효였다
+- 페이지별 revalidate: dashboard·map·spots 300초, schedule 3600초(시각 의존 없음).
+  시각 의존값은 5분마다 재평가되고 시가 바뀌면 fetch 키(`hour=eq.N`)가 달라져 새로 조회
+- ⚠ **`spots/[id]`는 `revalidate`만으로 캐시가 안 생긴다.** `generateStaticParams`가 없으면
+  완전 동적 라우트로 취급된다(실측 x-vercel-cache 연속 MISS). 빈 배열을 반환해 프리렌더 0개로
+  두되 정적+폴백 라우트로 등록 → 빌드 표기 ƒ(Dynamic)→●(SSG), 재측정 MISS→HIT 확인
+- 실측: 문서 수신 300~1000ms → **28~113ms**, FCP 대시보드 0.8~1.0초·상세 0.7~0.9초
+- 부수 효과: Supabase 장애 시에도 캐시된 HTML이 계속 서빙된다(무중단에 유리)
+
 **남은 것 (심사 제출 전 필수):** 앱 심사 정보의 **전화번호**(필수, 미입력으로 해당 섹션
 저장 실패 상태) / **연령 등급 설문** / **개인정보 처리방침 URL 등록**(앱 정보 페이지에
 `https://jejunow.vercel.app/privacy`)
