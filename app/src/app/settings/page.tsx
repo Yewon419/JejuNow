@@ -74,7 +74,9 @@ export default function SettingsPage() {
       </section>
 
       <p className="mt-8 text-center text-xs leading-relaxed text-dim/80">
-        JejuNow는 2026 관광데이터 활용 공모전 출품작입니다.
+        JejuNow {process.env.NEXT_PUBLIC_APP_VERSION}
+        <br />
+        2026 관광데이터 활용 공모전 출품작입니다.
       </p>
     </main>
   );
