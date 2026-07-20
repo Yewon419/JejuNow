@@ -1,7 +1,10 @@
-# iOS .ipa 클라우드 빌드 (BUILD_PLAN §R4 — Windows 환경 우회)
-# ⚠️ 실행 전제(사람 단계): Apple Developer 계정($99), 서명 인증서·프로비저닝 프로파일을
-#   리포지토리 시크릿(BUILD_CERTIFICATE_BASE64, P12_PASSWORD, PROVISION_PROFILE_BASE64,
-#   APPSTORE_API_KEY 등)으로 등록해야 한다. 등록 전까지 이 워크플로는 수동 트리거여도 실패함.
+# iOS .ipa 클라우드 빌드 + TestFlight 업로드 (BUILD_PLAN §R4 — Windows 환경 우회)
+# 서명 = App Store Connect API 키 기반 cloud signing (인증서·프로파일 수동 발급 불필요)
+# 필요 시크릿 4종:
+#   APPSTORE_API_KEY_ID      — ASC API 키 Key ID
+#   APPSTORE_ISSUER_ID       — ASC API 키 Issuer ID
+#   APPSTORE_API_PRIVATE_KEY — AuthKey_<ID>.p8 내용 base64
+#   APPLE_TEAM_ID            — Apple Developer Team ID
 name: ios-build
 
 on:
@@ -22,10 +25,50 @@ jobs:
         run: |
           npm ci
           npx cap sync ios
-      - name: Build archive (서명 시크릿 필요)
+      - name: Write App Store Connect API key
+        env:
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/private_keys
+          echo -n "$APPSTORE_API_PRIVATE_KEY" | base64 --decode > ~/private_keys/AuthKey_${{ secrets.APPSTORE_API_KEY_ID }}.p8
+      - name: Archive (cloud signing)
         working-directory: app/ios/App
         run: |
           xcodebuild -workspace App.xcworkspace -scheme App -configuration Release \
             -destination 'generic/platform=iOS' -archivePath build/App.xcarchive archive \
-            CODE_SIGN_STYLE=Manual
-      # exportArchive·TestFlight 업로드 단계는 Apple Developer 등록 후 추가 (Phase 5 사람 단계)
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_API_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.APPSTORE_API_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }} \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
+            MARKETING_VERSION=1.0.0 \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }}
+      - name: Write exportOptions.plist
+        working-directory: app/ios/App
+        run: |
+          cat > build/exportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>destination</key>
+            <string>upload</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>teamID</key>
+            <string>${{ secrets.APPLE_TEAM_ID }}</string>
+          </dict>
+          </plist>
+          EOF
+      - name: Export & upload to TestFlight
+        working-directory: app/ios/App
+        run: |
+          xcodebuild -exportArchive -archivePath build/App.xcarchive \
+            -exportOptionsPlist build/exportOptions.plist -exportPath build/export \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_API_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.APPSTORE_API_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }}
