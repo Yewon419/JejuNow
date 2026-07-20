@@ -19,8 +19,21 @@ congestion_pred 롤링 적재 확인(07-11~, 주간 갱신). 로컬 API 실측: 
 - 프론트 `/simulate`·`/alternatives` 라이브 연결 + Supabase 폴백 (`app/src/lib/api.ts`)
 - Railway 탈락($5/월 고정) → `render.yaml`(무료) + UptimeRobot 5분 핑 전략
 
-**남은 것 (전부 선택/나중):** iOS 스토어 제출(Apple Developer $99·심사) /
-최종 제출물 안내문 도착 시 산출물 보정
+**iOS 제출 (2026-07-20, Phase 1 완료):** Apple Developer 등록됨 → 번들 ID `com.jejunow.app`
+등록 / ASC API 키 `jejunow-ci`(관리자, Key ID 53FC2HF9MX) 발급·`_keys\JejuNow\` 보관 /
+GitHub 시크릿 4종 등록 / App Store Connect 앱 레코드 생성(App ID 6792661866, SKU jejunow) /
+**ios-build.yml 실행 성공 → TestFlight 빌드 1.0.0(4) 업로드 완료**.
+
+iOS CI 함정 3건 (전부 실패 후 수정):
+1. Capacitor SPM 프로젝트는 `.xcworkspace`를 만들지 않음 → `-project App.xcodeproj` 사용
+2. 자동 서명은 archive 단계에서 **개발용** 프로파일을 요구 → CI엔 등록 기기가 없어 발급 불가
+3. `CODE_SIGN_IDENTITY="Apple Distribution"`을 자동 서명과 함께 주면 "conflicting provisioning
+   settings"로 거부 → **무서명 아카이브(`CODE_SIGNING_ALLOWED=NO`) + exportArchive에서 배포
+   서명**이 유일하게 통과한 조합. 빌드번호는 `github.run_number` 자동 증가
+
+**남은 것:** TestFlight 처리 완료 대기 → 스토어 등록정보(스크린샷·설명·개인정보 처리방침 URL·
+연령등급) 작성 → 심사 제출 / 최종 제출물 안내문 도착 시 산출물 보정
+⚠ 셸이 Vercel URL을 로드하는 웹뷰라 심사 가이드라인 4.2(최소 기능) 리젝 가능성 있음
 
 **완료 기록 (2026-07-12, deploy_vercel.ps1):** REST→CLI 전환은 8a3d11b에서 이미
 반영돼 있었음(잔여 표시가 stale). 전환 후 첫 E2E 실행으로 검증 — env 5종
