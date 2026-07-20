@@ -29,6 +29,17 @@ export function markCoachDone(id: CoachId): void {
   }
 }
 
+const ALL_COACH_IDS: CoachId[] = ["map", "dashboard", "spot", "schedule"];
+
+/** 설정에서 「사용법 다시 보기」 — 전 화면의 완료 표시를 지운다 */
+export function resetAllCoach(): void {
+  try {
+    for (const id of ALL_COACH_IDS) localStorage.removeItem(STORAGE_PREFIX + id);
+  } catch {
+    // 저장 불가 환경 무시
+  }
+}
+
 export const DASHBOARD_COACH: CoachStep[] = [
   {
     anchor: "dash-feature",
