@@ -6,7 +6,10 @@ import { nowKstHourClamped, todayInHorizon } from "@/lib/constants";
 import { fetchCongestion, fetchSpots, fetchWeatherMonth } from "@/lib/supabase";
 import type { Congestion, Spot } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+// force-dynamic은 fetch마다 걸어둔 revalidate를 전부 no-store로 덮어써(문서상 동일) 캐시가 없었다.
+// ISR로 전환: 렌더된 HTML을 5분간 CDN에서 그대로 내보내 콜드 스타트를 건너뛴다.
+// 시각 의존값(오늘 날짜·현재 시)은 5분마다 재평가되고, 시가 바뀌면 fetch 키가 달라져 새로 조회된다.
+export const revalidate = 300;
 
 export default async function DashboardPage() {
   const date = todayInHorizon();

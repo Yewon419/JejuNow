@@ -8,7 +8,8 @@ import { LEVEL_COLOR, catLabel, cleanHours, todayInHorizon } from "@/lib/constan
 import { fetchCongestion, fetchSpotById, fetchSpotDay, fetchSpots } from "@/lib/supabase";
 import type { Congestion, Spot } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+// ISR — 사유는 dashboard/page.tsx 주석 참조. 스팟별로 처음 열릴 때 생성되고 이후 캐시된다
+export const revalidate = 300;
 
 /** tel: 링크용 — 숫자·+·- 만 남긴다. 대표번호 외 부가 텍스트가 섞인 값이면 링크 생략 */
 function telHref(tel: string): string | undefined {
