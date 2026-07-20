@@ -8,8 +8,15 @@ import { LEVEL_COLOR, catLabel, cleanHours, todayInHorizon } from "@/lib/constan
 import { fetchCongestion, fetchSpotById, fetchSpotDay, fetchSpots } from "@/lib/supabase";
 import type { Congestion, Spot } from "@/lib/types";
 
-// ISR — 사유는 dashboard/page.tsx 주석 참조. 스팟별로 처음 열릴 때 생성되고 이후 캐시된다
+// ISR — 사유는 dashboard/page.tsx 주석 참조
 export const revalidate = 300;
+
+// 빈 배열 = 빌드 때는 아무것도 미리 만들지 않되, 라우트를 정적+폴백으로 등록한다.
+// 이게 없으면 라우트가 완전 동적으로 취급되어 revalidate가 캐시를 만들지 않는다(실측: 계속 MISS).
+// 스팟 801개를 전부 프리렌더하면 빌드가 과도하게 길어져 on-demand 생성 후 캐시를 택했다.
+export function generateStaticParams(): { id: string }[] {
+  return [];
+}
 
 /** tel: 링크용 — 숫자·+·- 만 남긴다. 대표번호 외 부가 텍스트가 섞인 값이면 링크 생략 */
 function telHref(tel: string): string | undefined {
