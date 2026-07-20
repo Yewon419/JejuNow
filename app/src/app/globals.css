@@ -49,6 +49,10 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
+  /* 한국어는 기본값이면 어절 중간에서 잘린다("슬라이더" → "슬라이더/를").
+     keep-all로 띄어쓰기 단위(어절)에서만 끊고, 공백 없는 긴 문자열만 예외로 쪼갠다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 @media (prefers-reduced-motion: reduce) {
