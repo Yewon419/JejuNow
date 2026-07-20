@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CoachMark } from "@/components/CoachMark";
 import { LevelBadge } from "@/components/LevelBadge";
+import { MyPlanCard } from "@/components/MyPlanCard";
 import { QuietNearby } from "@/components/QuietNearby";
 import { DASHBOARD_COACH } from "@/lib/coach";
 import { nowKstHourClamped, todayInHorizon } from "@/lib/constants";
@@ -70,6 +71,9 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </header>
+
+      {/* 담아둔 일정이 있으면 최상단에 — 없으면 스스로 아무것도 그리지 않는다 */}
+      <MyPlanCard spots={spots} congestion={congestion} />
 
       {busy.length > 0 ? (
         <section aria-labelledby="busy-heading">
