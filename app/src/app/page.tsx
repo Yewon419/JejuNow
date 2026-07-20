@@ -1,7 +1,9 @@
+import { OnboardingGate } from "@/components/OnboardingGate";
 import { TravelerTypeSelect } from "@/components/TravelerTypeSelect";
 
 export default function OnboardingPage() {
   return (
+    <OnboardingGate>
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col px-6 py-12">
       <header className="pt-8">
         <p className="text-sm font-bold tracking-widest text-primary">JEJU NOW</p>
@@ -22,5 +24,6 @@ export default function OnboardingPage() {
         실측 혼잡도가 아닙니다.
       </p>
     </main>
+    </OnboardingGate>
   );
 }

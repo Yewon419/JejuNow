@@ -5,6 +5,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { MAP_COACH } from "@/lib/coach";
 import {
   HORIZON_END,
   HORIZON_START,
@@ -17,6 +18,7 @@ import {
 import type { KakaoCustomOverlay, KakaoMapObj } from "@/lib/kakao";
 import { fetchCongestionClient, fetchSpotDayClient } from "@/lib/supabaseClient";
 import type { Congestion, Spot } from "@/lib/types";
+import { CoachMark } from "./CoachMark";
 import { LevelBadge, PressureBar } from "./LevelBadge";
 
 const JEJU_CENTER = { lat: 33.37, lng: 126.53 };
@@ -169,6 +171,7 @@ export function MapView({
 
   return (
     <div className="relative flex min-h-[calc(100dvh-5rem)] flex-col">
+      <CoachMark id="map" steps={MAP_COACH} />
       {jsKey ? (
         <Script
           src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${jsKey}&autoload=false`}
@@ -204,7 +207,7 @@ export function MapView({
             onChange={(e) => setDate(e.target.value)}
             className="rounded-lg border border-line bg-card px-3 py-2 text-base text-ink shadow-card"
           />
-          <div className="flex-1">
+          <div className="flex-1" data-coach="map-hour">
             <label htmlFor="map-hour" className="flex justify-between text-xs text-dim">
               <span>시간</span>
               <span className="font-semibold text-ink">{hour}시</span>
@@ -221,7 +224,7 @@ export function MapView({
             />
           </div>
         </div>
-        <div className="flex items-center gap-3 text-[11px] text-dim" aria-hidden>
+        <div className="flex items-center gap-3 text-[11px] text-dim" data-coach="map-legend" aria-hidden>
           {([1, 2, 3, 4] as const).map((lv) => (
             <span key={lv} className="flex items-center gap-1">
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: LEVEL_COLOR[lv] }} />
