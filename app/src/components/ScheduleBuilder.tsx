@@ -181,7 +181,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
           min={HORIZON_START}
           max={HORIZON_END}
           onChange={(e) => setDate(e.target.value)}
-          className="mt-3 rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink shadow-card"
+          className="mt-3 rounded-lg border border-line bg-card px-3 py-2 text-base text-ink shadow-card"
         />
       </header>
 
@@ -241,7 +241,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                     aria-label="시간 변경"
                     value={slot.hour}
                     onChange={(e) => changeHour(slot.hour, Number(e.target.value))}
-                    className="shrink-0 rounded-lg border border-line bg-bg px-2 py-1.5 text-sm font-semibold text-ink"
+                    className="shrink-0 rounded-lg border border-line bg-bg px-2 py-1.5 text-base font-semibold text-ink"
                   >
                     {Array.from({ length: HOUR_MAX - HOUR_MIN + 1 }, (_, i) => HOUR_MIN + i).map(
                       (h) => (
@@ -331,7 +331,11 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
           aria-modal="true"
           aria-label="스팟 선택"
         >
-          <div className="max-h-[80dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-line bg-surface p-5">
+          {/* viewport-fit=cover라 하단 시트는 홈 인디케이터 높이만큼 직접 띄운다 */}
+          <div
+            className="max-h-[80dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-line bg-surface p-5"
+            style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
+          >
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-bold text-ink">스팟 선택</h2>
               <button
@@ -351,7 +355,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
               placeholder="스팟 이름 검색 (예: 성산일출봉)"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="mb-3 w-full rounded-lg border border-line bg-bg px-3 py-2.5 text-sm text-ink placeholder:text-dim"
+              className="mb-3 w-full rounded-lg border border-line bg-bg px-3 py-2.5 text-base text-ink placeholder:text-dim"
             />
             <ul className="space-y-1.5 pb-6">
               {filteredSpots.map((s) => (

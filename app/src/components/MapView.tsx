@@ -202,7 +202,7 @@ export function MapView({
             min={HORIZON_START}
             max={HORIZON_END}
             onChange={(e) => setDate(e.target.value)}
-            className="rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink shadow-card"
+            className="rounded-lg border border-line bg-card px-3 py-2 text-base text-ink shadow-card"
           />
           <div className="flex-1">
             <label htmlFor="map-hour" className="flex justify-between text-xs text-dim">

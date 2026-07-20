@@ -108,7 +108,11 @@ export function RouteView({
           onError={() => setStatus("failed")}
         />
       ) : null}
-      <div className="w-full max-w-md overflow-hidden rounded-t-3xl border-t border-line bg-surface">
+      {/* viewport-fit=cover라 하단 시트는 홈 인디케이터 높이만큼 직접 띄운다 */}
+      <div
+        className="w-full max-w-md overflow-hidden rounded-t-3xl border-t border-line bg-surface"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
           <p className="min-w-0 truncate text-sm font-bold text-ink">
             {from.name} <span className="text-dim">→</span> {to.name}

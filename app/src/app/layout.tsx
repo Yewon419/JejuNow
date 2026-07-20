@@ -10,6 +10,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // iOS 셸에서 env(safe-area-inset-*)이 실제 값을 반환하려면 cover가 필요하다.
+  // 없으면 0px으로 계산돼 하단바가 홈 인디케이터에 겹친다.
+  viewportFit: "cover",
   themeColor: "#ffffff",
 };
 
