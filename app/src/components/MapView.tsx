@@ -178,7 +178,7 @@ export function MapView({
         />
       ) : null}
 
-      <header className="space-y-3 bg-surface px-5 pb-3 pt-12 shadow-card">
+      <header className="space-y-3 bg-surface px-5 pb-3 pt-[calc(3rem+env(safe-area-inset-top,0px))] shadow-card">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-ink">혼잡도 지도</h1>
           <label className="flex cursor-pointer items-center gap-2 text-xs text-dim">

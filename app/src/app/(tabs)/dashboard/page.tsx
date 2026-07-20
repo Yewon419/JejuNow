@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { LevelBadge } from "@/components/LevelBadge";
 import { QuietNearby } from "@/components/QuietNearby";
@@ -18,8 +19,10 @@ export default async function DashboardPage() {
   const spotById = new Map<number, Spot>(spots.map((s) => [s.spot_id, s]));
 
   const withSpot = (c: Congestion) => ({ c, s: spotById.get(c.spot_id) });
-  const hasImg = (x: { c: Congestion; s: Spot | undefined }): x is { c: Congestion; s: Spot } =>
-    Boolean(x.s?.image_url);
+  const hasImg = (x: {
+    c: Congestion;
+    s: Spot | undefined;
+  }): x is { c: Congestion; s: Spot & { image_url: string } } => Boolean(x.s?.image_url);
 
   const busy = congestion
     .filter((c) => !c.is_imputed && c.level >= 3)
@@ -29,7 +32,7 @@ export default async function DashboardPage() {
     .slice(0, 2);
 
   return (
-    <main className="space-y-7 px-5 pt-12">
+    <main className="space-y-7 px-5 pt-[calc(3rem+env(safe-area-inset-top,0px))]">
       <header className="flex items-start justify-between">
         <div>
           <p className="text-sm text-dim">{date}</p>
@@ -57,11 +60,17 @@ export default async function DashboardPage() {
                 href={`/spots/${s.spot_id}`}
                 className="overflow-hidden rounded-card bg-card shadow-card transition-transform active:scale-[0.98]"
               >
-                <div
-                  className="h-24 w-full bg-cover bg-center"
-                  style={{ backgroundImage: `url(${s.image_url})` }}
-                  aria-hidden
-                />
+                {/* CSS 배경이 아니라 next/image — 배경으로 쓰면 원본을 그대로 받는다 */}
+                <div className="relative h-24 w-full bg-line" aria-hidden>
+                  <Image
+                    src={s.image_url}
+                    alt=""
+                    fill
+                    sizes="(max-width: 640px) 50vw, 288px"
+                    className="object-cover"
+                    unoptimized={s.image_url.endsWith(".bmp")}
+                  />
+                </div>
                 <div className="p-3">
                   <p className="truncate text-sm font-bold text-ink">{s.name}</p>
                   <div className="mt-1.5">

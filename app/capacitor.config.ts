@@ -11,7 +11,11 @@ const config: CapacitorConfig = {
     cleartext: false,
   },
   ios: {
-    contentInset: "automatic",
+    // never = contentInsetAdjustmentBehavior.never (Capacitor 기본값).
+    // automatic이면 UIKit이 스크롤뷰에 세이프에어리어 인셋을 넣는데, viewport-fit=cover로
+    // CSS가 이미 env()로 같은 일을 하므로 이중 처리가 되어 상단에 스크롤뷰 배경(검정)이 드러난다.
+    contentInset: "never",
+    backgroundColor: "#f4f6f9",
   },
 };
 

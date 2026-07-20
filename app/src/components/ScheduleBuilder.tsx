@@ -168,7 +168,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   }
 
   return (
-    <main className="space-y-6 px-5 pt-12">
+    <main className="space-y-6 px-5 pt-[calc(3rem+env(safe-area-inset-top,0px))]">
       <header>
         <h1 className="text-2xl font-bold text-ink">내 여행</h1>
         <p className="mt-1 text-sm text-dim">

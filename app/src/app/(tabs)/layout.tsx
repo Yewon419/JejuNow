@@ -6,7 +6,7 @@ export default function TabsLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="mx-auto min-h-dvh max-w-xl pb-20">
+    <div className="mx-auto min-h-dvh max-w-xl pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
       {children}
       <BottomNav />
     </div>

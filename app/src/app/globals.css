@@ -1,4 +1,5 @@
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+/* 폰트는 layout.tsx의 <link>로 옮겼다. CSS @import는 이 파일을 다 받은 뒤에야
+   발견되어 요청이 직렬로 이어지고(우리 CSS → jsdelivr CSS → 폰트 파일) 그동안 렌더가 막힌다. */
 @import "tailwindcss";
 
 @theme {

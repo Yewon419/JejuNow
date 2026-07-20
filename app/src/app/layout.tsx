@@ -23,6 +23,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className="h-full antialiased">
+      {/* HTML 파싱 시점에 바로 시작하도록 head로 올린다 (React 19가 호이스팅) */}
+      <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="" />
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+      />
       <body className="min-h-dvh">
         {/* 폰 프레임 — 데스크톱에서도 모바일 비율(max-w-md)로 중앙 고정 */}
         <div className="mx-auto min-h-dvh w-full max-w-md sm:border-x sm:border-line">

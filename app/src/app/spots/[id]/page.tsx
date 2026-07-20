@@ -68,7 +68,7 @@ export default async function SpotDetailPage({
         <Link
           href="/dashboard"
           aria-label="뒤로"
-          className="absolute left-4 top-12 rounded-full bg-black/35 p-2 text-white backdrop-blur transition-colors hover:bg-black/50"
+          className="absolute left-4 top-[calc(3rem+env(safe-area-inset-top,0px))] rounded-full bg-black/35 p-2 text-white backdrop-blur transition-colors hover:bg-black/50"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
@@ -166,11 +166,19 @@ export default async function SpotDetailPage({
                   href={`/spots/${alt.spot.spot_id}`}
                   className="flex items-center gap-3 overflow-hidden rounded-card bg-card p-2.5 shadow-card transition-transform active:scale-[0.99]"
                 >
-                  <span
-                    className="h-14 w-14 shrink-0 rounded-xl bg-line bg-cover bg-center"
-                    style={alt.spot.image_url ? { backgroundImage: `url(${alt.spot.image_url})` } : undefined}
-                    aria-hidden
-                  />
+                  {/* CSS 배경이 아니라 next/image — 배경으로 쓰면 원본(최대 600KB)을 56px 칸에 그대로 받는다 */}
+                  <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-line" aria-hidden>
+                    {alt.spot.image_url ? (
+                      <Image
+                        src={alt.spot.image_url}
+                        alt=""
+                        fill
+                        sizes="56px"
+                        className="object-cover"
+                        unoptimized={alt.spot.image_url.endsWith(".bmp")}
+                      />
+                    ) : null}
+                  </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-ink">{alt.spot.name}</p>
                     <p className="text-xs text-dim">

@@ -42,13 +42,17 @@ const TABS = [
 export function BottomNav() {
   const pathname = usePathname();
   return (
-    <nav
-      aria-label="주요 메뉴"
-      className="fixed inset-x-0 bottom-0 z-40"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-    >
-      {/* 폰 프레임(max-w-md)에 맞춰 바 배경도 프레임 폭만 차지 */}
-      <div className="mx-auto flex max-w-md border-t border-line bg-surface/95 backdrop-blur sm:border-x">
+    <nav aria-label="주요 메뉴" className="fixed inset-x-0 bottom-0 z-40">
+      {/*
+        네이티브 UITabBar와 같은 구조: 바는 화면 바닥(bottom-0)에 붙은 채 높이만 커지고,
+        홈 인디케이터 영역은 배경으로 덮는다. 인셋을 바깥 래퍼의 padding으로 주면
+        배경을 가진 이 요소가 통째로 밀려 올라가 아래에 빈 공간이 생긴다.
+        폰 프레임(max-w-md)에 맞춰 바 배경도 프레임 폭만 차지한다.
+      */}
+      <div
+        className="mx-auto flex max-w-md border-t border-line bg-surface sm:border-x"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
         {TABS.map((tab) => {
           const active = pathname.startsWith(tab.href);
           return (
