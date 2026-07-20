@@ -90,7 +90,7 @@ export function QuietNearby({
   return (
     <>
       {feature ? (
-        <section aria-labelledby="feature-heading">
+        <section aria-labelledby="feature-heading" data-coach="dash-feature">
           <h2 id="feature-heading" className="mb-3 text-base font-bold text-ink">
             {origin ? `${origin.label} 한적한 코스` : "지금 가장 한적한 코스"}
           </h2>
@@ -98,7 +98,7 @@ export function QuietNearby({
         </section>
       ) : null}
 
-      <section aria-labelledby="calm-heading" className="pb-4">
+      <section aria-labelledby="calm-heading" className="pb-4" data-coach="dash-quiet">
         <div className="mb-3 flex items-baseline justify-between">
           <h2 id="calm-heading" className="text-base font-bold text-ink">
             지금 한적한 스팟

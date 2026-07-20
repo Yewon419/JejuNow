@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type CoachId, type CoachStep, isCoachDone, markCoachDone } from "@/lib/coach";
 
 type Rect = { top: number; left: number; width: number; height: number };
@@ -25,6 +25,9 @@ export function CoachMark({ id, steps }: { id: CoachId; steps: CoachStep[] }) {
   const [active, setActive] = useState(false);
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
+  // 한 단계도 실제로 보여주지 못했다면 완료로 저장하지 않는다.
+  // (예: 빈 일정 화면처럼 대상이 아직 없는 경우 — 다음에 내용이 생기면 그때 보여준다)
+  const shownRef = useRef(false);
 
   useEffect(() => {
     if (isCoachDone(id)) return;
@@ -34,7 +37,7 @@ export function CoachMark({ id, steps }: { id: CoachId; steps: CoachStep[] }) {
   }, [id]);
 
   const finish = useCallback(() => {
-    markCoachDone(id);
+    if (shownRef.current) markCoachDone(id);
     setActive(false);
   }, [id]);
 
@@ -51,8 +54,12 @@ export function CoachMark({ id, steps }: { id: CoachId; steps: CoachStep[] }) {
         return;
       }
       const r = readRect(step.anchor);
-      if (r) setRect(r);
-      else setIndex((i) => i + 1); // 대상 없음 — 건너뛴다
+      if (r) {
+        shownRef.current = true;
+        setRect(r);
+      } else {
+        setIndex((i) => i + 1); // 대상 없음 — 건너뛴다
+      }
     };
     queueMicrotask(measure);
     window.addEventListener("resize", measure);

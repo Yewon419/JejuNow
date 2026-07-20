@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CoachMark } from "@/components/CoachMark";
 import { LevelBadge } from "@/components/LevelBadge";
 import { SpotOverview } from "@/components/SpotOverview";
 import { findAlternatives } from "@/lib/alternatives";
+import { SPOT_COACH } from "@/lib/coach";
 import { LEVEL_COLOR, catLabel, cleanHours, todayInHorizon } from "@/lib/constants";
 import { fetchCongestion, fetchSpotById, fetchSpotDay, fetchSpots } from "@/lib/supabase";
 import type { Congestion, Spot } from "@/lib/types";
@@ -55,6 +57,7 @@ export default async function SpotDetailPage({
 
   return (
     <main className="mx-auto min-h-dvh max-w-xl pb-12">
+      <CoachMark id="spot" steps={SPOT_COACH} />
       <div
         className={`relative h-80 w-full ${
           spot.image_url ? "bg-line" : "bg-gradient-to-br from-primary to-cta"
@@ -113,7 +116,7 @@ export default async function SpotDetailPage({
 
         {spot.overview ? <SpotOverview text={spot.overview} /> : null}
 
-        <section aria-labelledby="timeline-heading">
+        <section aria-labelledby="timeline-heading" data-coach="spot-chart">
           <h2 id="timeline-heading" className="mb-1 text-lg font-bold text-ink">
             오늘의 시간대별 혼잡 예측
           </h2>
@@ -160,7 +163,7 @@ export default async function SpotDetailPage({
           )}
         </section>
 
-        <section aria-labelledby="alt-heading">
+        <section aria-labelledby="alt-heading" data-coach="spot-alt">
           <h2 id="alt-heading" className="mb-1 text-lg font-bold text-ink">
             비슷한데 더 한적한 곳
           </h2>

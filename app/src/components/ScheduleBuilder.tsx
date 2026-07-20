@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { type Alternative, findAlternatives } from "@/lib/alternatives";
+import { SCHEDULE_COACH } from "@/lib/coach";
 import { type RouteData, fetchAlternativesLive, fetchRoute, simulateSchedule } from "@/lib/api";
+import { CoachMark } from "./CoachMark";
 import { RouteView } from "./RouteView";
 import {
   HORIZON_END,
@@ -169,6 +171,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
 
   return (
     <main className="space-y-6 px-5 pt-[calc(3rem+env(safe-area-inset-top,0px))]">
+      <CoachMark id="schedule" steps={SCHEDULE_COACH} />
       <header>
         <h1 className="text-2xl font-bold text-ink">내 여행</h1>
         <p className="mt-1 text-sm text-dim">
@@ -318,6 +321,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
         <button
           type="button"
           onClick={() => setPicker({ open: true, forHour: null })}
+          data-coach="sched-add"
           className="relative w-full cursor-pointer rounded-card border border-dashed border-line bg-card/50 py-4 text-sm font-semibold text-dim transition-colors hover:border-primary hover:text-primary"
         >
           + 스팟 추가

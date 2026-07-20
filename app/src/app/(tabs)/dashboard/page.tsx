@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CoachMark } from "@/components/CoachMark";
 import { LevelBadge } from "@/components/LevelBadge";
 import { QuietNearby } from "@/components/QuietNearby";
+import { DASHBOARD_COACH } from "@/lib/coach";
 import { nowKstHourClamped, todayInHorizon } from "@/lib/constants";
 import { fetchCongestion, fetchSpots, fetchWeatherMonth } from "@/lib/supabase";
 import type { Congestion, Spot } from "@/lib/types";
@@ -36,6 +38,8 @@ export default async function DashboardPage() {
 
   return (
     <main className="space-y-7 px-5 pt-[calc(3rem+env(safe-area-inset-top,0px))]">
+      {/* 서버 컴포넌트에서 클라이언트 컴포넌트를 그대로 렌더 — 별도 래퍼 불필요 */}
+      <CoachMark id="dashboard" steps={DASHBOARD_COACH} />
       <header className="flex items-start justify-between">
         <div>
           <p className="text-sm text-dim">{date}</p>
