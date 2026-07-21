@@ -319,6 +319,36 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
           );
         })}
 
+        {/* 빈 일정: 막막한 백지 대신 안내 장면 (계획 여행자가 처음 오는 화면) */}
+        {loaded && slots.length === 0 ? (
+          <li className="animate-card-in rounded-card bg-card px-6 py-10 text-center shadow-card">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.4}
+              className="mx-auto h-14 w-14 text-primary/60"
+              aria-hidden
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25s-7.5-4.108-7.5-11.25a7.5 7.5 0 1 1 15 0Z"
+              />
+            </svg>
+            <p className="mt-4 font-bold text-ink">아직 담은 곳이 없어요</p>
+            <p className="mt-1 text-sm leading-relaxed text-dim">
+              가고 싶은 곳을 시간대별로 담으면
+              <br />그 시간에 얼마나 붐빌지 미리 알려드려요.
+            </p>
+          </li>
+        ) : null}
+
         <button
           type="button"
           onClick={() => setPicker({ open: true, forHour: null })}
@@ -378,7 +408,15 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                 </li>
               ))}
               {filteredSpots.length === 0 ? (
-                <li className="p-3 text-sm text-dim">검색 결과가 없어요.</li>
+                <li className="px-3 py-8 text-center">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="mx-auto h-9 w-9 text-dim/50" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                  </svg>
+                  <p className="mt-2 text-sm text-dim">
+                    「{query}」에 맞는 곳이 없어요.
+                    <br />다른 이름으로 찾아보세요.
+                  </p>
+                </li>
               ) : null}
             </ul>
           </div>

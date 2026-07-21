@@ -119,9 +119,15 @@ export function QuietNearby({
             ))}
           </div>
         ) : (
-          <p className="rounded-card bg-card p-4 text-sm text-dim shadow-card">
-            데이터 준비 중입니다. 잠시 후 다시 확인해 주세요.
-          </p>
+          <div className="rounded-card bg-card px-6 py-10 text-center shadow-card">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.4} className="mx-auto h-11 w-11 text-dim/50" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2m6-2a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z" />
+            </svg>
+            <p className="mt-3 text-sm text-dim">
+              지금은 보여드릴 곳을 준비하고 있어요.
+              <br />잠시 후 다시 확인해 주세요.
+            </p>
+          </div>
         )}
       </section>
     </>
