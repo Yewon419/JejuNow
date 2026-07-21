@@ -3,9 +3,11 @@
 import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type RouteData, fetchRoute } from "@/lib/api";
+import { haversineKm } from "@/lib/alternatives";
 import type { Spot } from "@/lib/types";
 
 type Status = "loading" | "ready" | "failed";
+type FailReason = "offroad" | "error";
 
 /** 두 슬롯 간 자동차 경로를 앱 안에서 표시 — 카카오내비 API 경로를 우리 지도에 그린다.
  *  API 실패(콜드스타트·도로 밖 좌표 등) 시 외부 카카오맵 길찾기 링크로 폴백. */
@@ -20,7 +22,10 @@ export function RouteView({
 }) {
   const [status, setStatus] = useState<Status>("loading");
   const [route, setRoute] = useState<RouteData | null>(null);
+  const [failReason, setFailReason] = useState<FailReason>("error");
   const containerRef = useRef<HTMLDivElement>(null);
+  // 경로 실패 시 참고용 직선거리(좌표만으로 계산 — 서버 무관)
+  const straightKm = haversineKm(from.lat, from.lng, to.lat, to.lng);
   // SDK가 이미 로드돼 있으면(지도 페이지 방문 후) Script onLoad가 다시 안 불린다
   const [sdkReady, setSdkReady] = useState(
     () => typeof window !== "undefined" && Boolean(window.kakao),
@@ -34,11 +39,12 @@ export function RouteView({
     let cancelled = false;
     fetchRoute(from, to).then((r) => {
       if (cancelled) return;
-      if (!r) {
+      if (!r.ok) {
+        setFailReason(r.reason);
         setStatus("failed");
         return;
       }
-      setRoute(r);
+      setRoute(r.data);
     });
     return () => {
       cancelled = true;
@@ -105,7 +111,10 @@ export function RouteView({
           src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${jsKey}&autoload=false`}
           strategy="afterInteractive"
           onLoad={() => setSdkReady(true)}
-          onError={() => setStatus("failed")}
+          onError={() => {
+            setFailReason("error");
+            setStatus("failed");
+          }}
         />
       ) : null}
       {/* viewport-fit=cover라 하단 시트는 홈 인디케이터 높이만큼 직접 띄운다 */}
@@ -137,11 +146,37 @@ export function RouteView({
             </div>
           ) : null}
           {status === "failed" ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface px-6 text-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-surface px-6 text-center">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+                className="h-9 w-9 text-dim/50"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-.553-.894L15 4m0 13V4m0 0L9 7"
+                />
+              </svg>
               <p className="text-sm text-dim">
-                앱 안에서 경로를 불러오지 못했어요.
-                <br />
-                카카오맵에서 바로 확인할 수 있어요.
+                {failReason === "offroad" ? (
+                  <>
+                    출발·도착 중 한 곳이 도보·자연 구간이라
+                    <br />
+                    앱 지도에 경로를 그릴 수 없어요.
+                    <br />
+                    카카오맵에서 실제 길을 확인하세요.
+                  </>
+                ) : (
+                  <>
+                    경로를 잠시 불러오지 못했어요.
+                    <br />
+                    다시 시도하거나 카카오맵에서 확인하세요.
+                  </>
+                )}
               </p>
             </div>
           ) : null}
@@ -154,6 +189,10 @@ export function RouteView({
               <span className="text-dim"> · 약 </span>
               <span className="font-bold">{Math.max(1, Math.round(route.duration_s / 60))}분</span>
               <span className="text-dim"> (자동차)</span>
+            </p>
+          ) : status === "failed" ? (
+            <p className="text-sm text-dim">
+              직선거리 <span className="font-bold text-ink">약 {straightKm.toFixed(1)}km</span>
             </p>
           ) : (
             <span className="text-sm text-dim">자동차 경로</span>

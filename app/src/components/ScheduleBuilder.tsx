@@ -134,7 +134,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
       if (cancelled) return;
       const m = new Map<string, RouteData>();
       for (const [k, r] of entries) {
-        if (r) m.set(k, r);
+        if (r.ok) m.set(k, r.data);
       }
       setRouteMeta(m);
     });

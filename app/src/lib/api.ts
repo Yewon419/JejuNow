@@ -84,32 +84,44 @@ export type RouteData = {
   path: [number, number][]; // [lat, lng]
 };
 
-// 경로는 (출발, 도착)당 1회만 카카오 호출 — 칩 시간 표시와 RouteView 모달이 결과 공유
-const routeCache = new Map<string, Promise<RouteData | null>>();
+/** 경로 조회 결과. 실패는 두 갈래로 구분한다:
+ *  - "offroad": 좌표가 도로에서 멀어 카카오가 경로를 못 그림(422). 오류가 아니라 정상 상황.
+ *  - "error": 콜드스타트·타임아웃·서버 오류(502 등). 재시도 대상. */
+export type RouteResult =
+  | { ok: true; data: RouteData }
+  | { ok: false; reason: "offroad" | "error" };
 
-/** 두 스팟 간 자동차 경로 — 동일 오리진 Vercel 함수(/api/kakao-route) 경유, 실패 시 null.
+// 경로는 (출발, 도착)당 1회만 카카오 호출 — 칩 시간 표시와 RouteView 모달이 결과 공유
+const routeCache = new Map<string, Promise<RouteResult>>();
+
+/** 두 스팟 간 자동차 경로 — 동일 오리진 Vercel 함수(/api/kakao-route) 경유.
  *  Render 프록시는 카카오의 Render IP 플래그(401)로 사용 불가 — route.ts 주석 참조. */
-export function fetchRoute(from: Spot, to: Spot): Promise<RouteData | null> {
+export function fetchRoute(from: Spot, to: Spot): Promise<RouteResult> {
   const key = `${from.spot_id}:${to.spot_id}`;
   const cached = routeCache.get(key);
   if (cached) return cached;
-  const promise = (async (): Promise<RouteData | null> => {
+  const promise = (async (): Promise<RouteResult> => {
     try {
       const res = await fetch(
         `/api/kakao-route?from=${from.lat},${from.lng}&to=${to.lat},${to.lng}`,
         { signal: AbortSignal.timeout(TIMEOUT_MS) },
       );
-      if (!res.ok) return null;
+      // 422 = 도로 밖 좌표(정상 상황), 그 외 비정상 = 재시도 가능한 오류
+      if (res.status === 422) return { ok: false, reason: "offroad" };
+      if (!res.ok) return { ok: false, reason: "error" };
       const data = (await res.json()) as RouteData;
-      if (!Array.isArray(data.path) || data.path.length === 0) return null;
-      return data;
+      if (!Array.isArray(data.path) || data.path.length === 0) {
+        return { ok: false, reason: "error" };
+      }
+      return { ok: true, data };
     } catch {
-      return null;
+      return { ok: false, reason: "error" };
     }
   })();
   routeCache.set(key, promise);
   promise.then((r) => {
-    if (!r) routeCache.delete(key); // 일시 실패는 캐시하지 않음 (재시도 허용)
+    // 일시 오류만 캐시에서 비운다(재시도 허용). 도로 밖은 확정 결과라 캐시 유지.
+    if (!r.ok && r.reason === "error") routeCache.delete(key);
   });
   return promise;
 }
