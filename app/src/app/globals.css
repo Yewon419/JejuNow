@@ -4,11 +4,11 @@
 
 @theme {
   /* JejuNow 디자인 토큰 — 라이트, 사진 중심, iOS 네이티브 */
-  /* 배경은 청량한 블루그레이 — 카드(순백)와 대비되며 시원하다 */
-  --color-bg: #eef2f7; /* 앱 배경: 블루그레이 */
-  --color-surface: #ffffff; /* 시트·헤더 */
+  /* 배경은 iOS systemGroupedBackground와 동일 — 네이티브 앱과 같은 배경 톤 */
+  --color-bg: #f2f2f7; /* 앱 배경: iOS 시스템 그룹 배경 */
+  --color-surface: #ffffff; /* 시트·헤더 (secondarySystemGroupedBackground) */
   --color-card: #ffffff; /* 카드 */
-  --color-line: #dde4ee; /* 보더·디바이더 (블루그레이 톤 맞춤) */
+  --color-line: #e3e3e8; /* 보더·디바이더 (iOS systemGray5 계열) */
   --color-ink: #16213a; /* 본문 다크 네이비 텍스트 */
   --color-dim: #6b7585; /* 보조 텍스트 */
   --color-primary: #0e7d8c; /* 브랜드 틸(오션) — 링크·강조 */
