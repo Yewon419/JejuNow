@@ -18,6 +18,7 @@ import {
 import type { KakaoCustomOverlay, KakaoMapObj } from "@/lib/kakao";
 import { fetchCongestionClient, fetchSpotDayClient } from "@/lib/supabaseClient";
 import type { Congestion, Spot } from "@/lib/types";
+import { tapLight } from "@/lib/haptics";
 import { CoachMark } from "./CoachMark";
 import { LevelBadge, PressureBar } from "./LevelBadge";
 
@@ -138,7 +139,10 @@ export function MapView({
           <button
             type="button"
             aria-label={spot.name}
-            onClick={() => setSelected(spot)}
+            onClick={() => {
+              tapLight();
+              setSelected(spot);
+            }}
             style={{
               width: size,
               height: size,

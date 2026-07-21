@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { tapLight } from "@/lib/haptics";
 
 const TABS = [
   {
@@ -60,6 +61,9 @@ export function BottomNav() {
               key={tab.href}
               href={tab.href}
               aria-current={active ? "page" : undefined}
+              onClick={() => {
+                if (!active) tapLight(); // 같은 탭 재탭은 진동 안 함
+              }}
               className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs transition-colors ${
                 active ? "text-primary" : "text-dim hover:text-ink"
               }`}

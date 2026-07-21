@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { tapMedium } from "@/lib/haptics";
 
 // 즉흥 여행자 2단계 — 위치를 왜 쓰는지 먼저 알리고 권한을 요청한다.
 // 대시보드에서 맥락 없이 시스템 팝업이 뜨는 것보다 낫고, 거부해도 괜찮다는 걸 알린다.
@@ -14,6 +15,7 @@ export function OnboardingSpontaneous() {
   }
 
   function allow() {
+    tapMedium();
     if (!navigator.geolocation) {
       go();
       return;

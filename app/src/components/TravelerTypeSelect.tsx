@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { tapMedium } from "@/lib/haptics";
 
 // 초안 톤: 큰 사진 카드 2장 (즉흥=노을해안로 노을 / 계획=광치기해변 새벽 일출).
 // 사진 출처 = TourAPI(한국관광공사) — 다른 화면의 스팟 이미지와 동일 소스.
@@ -33,6 +34,7 @@ export function TravelerTypeSelect() {
   const [pending, setPending] = useState<string | null>(null);
 
   function choose(id: string, href: string) {
+    tapMedium();
     setPending(id);
     try {
       localStorage.setItem("jejunow:travelerType", id);

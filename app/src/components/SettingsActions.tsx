@@ -3,12 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { resetAllCoach } from "@/lib/coach";
+import { tapLight } from "@/lib/haptics";
 
 export function SettingsActions() {
   const router = useRouter();
   const [coachReset, setCoachReset] = useState(false);
 
   function replayTutorial() {
+    tapLight();
     resetAllCoach();
     setCoachReset(true);
   }

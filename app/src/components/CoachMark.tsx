@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type CoachId, type CoachStep, isCoachDone, markCoachDone } from "@/lib/coach";
+import { notifySuccess } from "@/lib/haptics";
 
 type Rect = { top: number; left: number; width: number; height: number };
 
@@ -37,7 +38,10 @@ export function CoachMark({ id, steps }: { id: CoachId; steps: CoachStep[] }) {
   }, [id]);
 
   const finish = useCallback(() => {
-    if (shownRef.current) markCoachDone(id);
+    if (shownRef.current) {
+      markCoachDone(id);
+      notifySuccess(); // 튜토리얼 한 흐름을 마쳤을 때만 (건너뛰기 포함, 미노출 종료는 제외)
+    }
     setActive(false);
   }, [id]);
 

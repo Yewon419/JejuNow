@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { type Alternative, findAlternatives } from "@/lib/alternatives";
 import { SCHEDULE_COACH } from "@/lib/coach";
+import { tapLight, tapMedium } from "@/lib/haptics";
 import { type RouteData, fetchAlternativesLive, fetchRoute, simulateSchedule } from "@/lib/api";
 import { CoachMark } from "./CoachMark";
 import { RouteView } from "./RouteView";
@@ -149,6 +150,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   }, [spots, query]);
 
   function addSlot(spotId: number) {
+    tapMedium();
     const hour = picker.forHour ?? nextFreeHour(slots);
     setSlots((prev) =>
       [...prev.filter((s) => s.hour !== hour), { hour, spotId }].sort((a, b) => a.hour - b.hour),
@@ -158,6 +160,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   }
 
   function removeSlot(hour: number) {
+    tapLight();
     setSlots((prev) => prev.filter((s) => s.hour !== hour));
   }
 

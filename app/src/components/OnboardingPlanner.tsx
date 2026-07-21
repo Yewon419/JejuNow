@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { HORIZON_END, HORIZON_START, todayInHorizon } from "@/lib/constants";
+import { notifySuccess } from "@/lib/haptics";
 
 // 계획 여행자 2단계 — 여행 날짜를 먼저 받아 일정 화면에 채워 넘긴다.
 // 저장 형식은 ScheduleBuilder가 읽는 계약과 동일해야 한다.
@@ -14,6 +15,7 @@ export function OnboardingPlanner() {
 
   function go(withDate: boolean) {
     if (withDate) {
+      notifySuccess();
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         const prev = raw ? (JSON.parse(raw) as { slots?: unknown }) : null;
