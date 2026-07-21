@@ -112,8 +112,10 @@ export function QuietNearby({
         </div>
         {rest.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {rest.map(({ c, s }) => (
-              <SpotCard key={s.spot_id} spot={s} congestion={c} />
+            {rest.map(({ c, s }, i) => (
+              <div key={s.spot_id} className="animate-card-in" style={{ animationDelay: `${i * 60}ms` }}>
+                <SpotCard spot={s} congestion={c} />
+              </div>
             ))}
           </div>
         ) : (

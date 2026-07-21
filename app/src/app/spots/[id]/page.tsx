@@ -134,14 +134,15 @@ export default async function SpotDetailPage({
           {day.length > 0 ? (
             <>
               <div className="flex h-36 items-end gap-1" role="img" aria-label="시간대별 혼잡도 막대그래프">
-                {day.map((d) => (
+                {day.map((d, i) => (
                   <div key={d.hour} className="flex flex-1 flex-col items-center gap-1">
                     <div
-                      className="w-full rounded-t-md"
+                      className="w-full origin-bottom rounded-t-md animate-bar-grow"
                       style={{
                         height: `${Math.max(6, (d.pressure / maxPressure) * 120)}px`,
                         backgroundColor: LEVEL_COLOR[d.level],
                         opacity: 0.9,
+                        animationDelay: `${i * 35}ms`,
                       }}
                     />
                     <span className="text-[10px] text-dim">{d.hour}</span>
@@ -176,8 +177,8 @@ export default async function SpotDetailPage({
           </h2>
           <p className="mb-4 text-xs text-dim">{refHour}시 기준</p>
           <ul className="space-y-2">
-            {alternatives.map((alt) => (
-              <li key={alt.spot.spot_id}>
+            {alternatives.map((alt, i) => (
+              <li key={alt.spot.spot_id} className="animate-card-in" style={{ animationDelay: `${i * 60}ms` }}>
                 <Link
                   href={`/spots/${alt.spot.spot_id}`}
                   className="flex items-center gap-3 overflow-hidden rounded-card bg-card p-2.5 shadow-card transition-transform active:scale-[0.99]"

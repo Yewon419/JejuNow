@@ -29,7 +29,9 @@
 
   --shadow-card: 0 1px 2px rgb(16 33 58 / 0.04), 0 8px 24px rgb(16 33 58 / 0.06);
 
-  /* 지도 상세 시트 슬라이드업 (reduced-motion은 아래 미디어쿼리가 전역 무효화) */
+  /* 아래 모션들 모두 reduced-motion 미디어쿼리(하단)가 전역 무효화 */
+
+  /* 지도 상세 시트 슬라이드업 */
   --animate-sheet-up: sheet-up 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   @keyframes sheet-up {
     from {
@@ -39,6 +41,30 @@
     to {
       transform: translateY(0);
       opacity: 1;
+    }
+  }
+
+  /* 혼잡도 차트 막대: 아래에서 자라난다(transform-origin은 사용처에서 bottom 지정) */
+  --animate-bar-grow: bar-grow 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  @keyframes bar-grow {
+    from {
+      transform: scaleY(0);
+    }
+    to {
+      transform: scaleY(1);
+    }
+  }
+
+  /* 카드 순차 등장(fade + 살짝 올라옴). delay는 사용처에서 인덱스별로 준다 */
+  --animate-card-in: card-in 0.4s ease-out both;
+  @keyframes card-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 }
