@@ -94,7 +94,7 @@ export default async function DashboardPage() {
                     alt=""
                     fill
                     sizes="(max-width: 640px) 50vw, 288px"
-                    className="object-cover"
+                    className="object-cover photo-warm"
                     unoptimized={s.image_url.endsWith(".bmp")}
                   />
                 </div>

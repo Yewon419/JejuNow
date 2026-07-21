@@ -59,7 +59,7 @@ export function TravelerTypeSelect() {
             alt={t.alt}
             fill
             sizes="(max-width: 640px) 100vw, 576px"
-            className="object-cover"
+            className="object-cover photo-warm"
             priority
           />
           <span className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" aria-hidden />

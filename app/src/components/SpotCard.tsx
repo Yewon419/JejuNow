@@ -18,7 +18,7 @@ export function SpotCard({ spot, congestion }: { spot: Spot; congestion?: Conges
             alt={spot.name}
             fill
             sizes="(max-width: 640px) 100vw, 320px"
-            className="object-cover"
+            className="object-cover photo-warm"
             unoptimized={spot.image_url.endsWith(".bmp")}
           />
         ) : (

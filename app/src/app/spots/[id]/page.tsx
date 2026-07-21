@@ -69,13 +69,13 @@ export default async function SpotDetailPage({
             alt=""
             fill
             sizes="(max-width: 640px) 100vw, 576px"
-            className="object-cover"
+            className="object-cover photo-warm"
             priority
             unoptimized={spot.image_url.endsWith(".bmp")}
           />
         ) : null}
         {/* 흰 글씨 가독성 스크림 — 위(뒤로 버튼)·아래(제목) 양끝을 어둡게 */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/10 to-black/65" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/5 to-black/75" />
         <Link
           href="/dashboard"
           aria-label="뒤로"
@@ -90,29 +90,38 @@ export default async function SpotDetailPage({
             {spot.region} · {catLabel(spot.cat2)}
             {spot.is_outdoor === true ? " · 야외" : spot.is_outdoor === false ? " · 실내" : ""}
           </p>
-          <h1 className="mt-1 text-3xl font-bold text-white [text-shadow:0_1px_8px_rgb(0_0_0/0.35)]">
+          {/* 히어로엔 이름·지역·주소만 — 운영시간·전화 같은 긴 정보는 사진 밖 카드로 내렸다
+              (긴 운영시간이 사진을 덮어 사진도 글도 안 살던 문제) */}
+          <h1 className="mt-1 text-[2rem] font-bold leading-tight text-white [text-shadow:0_1px_12px_rgb(0_0_0/0.4)]">
             {spot.name}
           </h1>
-          {spot.addr ? <p className="mt-2 text-sm text-white/80">{spot.addr}</p> : null}
-          {spot.opening_hours ? (
-            <p className="mt-1 text-sm text-white/80">운영시간: {cleanHours(spot.opening_hours)}</p>
-          ) : null}
-          {spot.tel ? (
-            <p className="mt-1 text-sm text-white/80">
-              전화:{" "}
-              {telHref(spot.tel) ? (
-                <a href={telHref(spot.tel)} className="underline underline-offset-2">
-                  {spot.tel}
-                </a>
-              ) : (
-                spot.tel
-              )}
-            </p>
-          ) : null}
+          {spot.addr ? <p className="mt-2 text-sm text-white/85">{spot.addr}</p> : null}
         </header>
       </div>
 
       <div className="relative -mt-6 space-y-8 rounded-t-3xl bg-bg px-5 pt-8">
+        {spot.opening_hours || spot.tel ? (
+          <div className="space-y-1.5 rounded-card bg-card p-4 shadow-card">
+            {spot.opening_hours ? (
+              <p className="flex gap-2 text-sm text-ink">
+                <span className="shrink-0 font-semibold text-dim">운영</span>
+                <span className="leading-relaxed">{cleanHours(spot.opening_hours)}</span>
+              </p>
+            ) : null}
+            {spot.tel ? (
+              <p className="flex gap-2 text-sm text-ink">
+                <span className="shrink-0 font-semibold text-dim">전화</span>
+                {telHref(spot.tel) ? (
+                  <a href={telHref(spot.tel)} className="text-primary underline underline-offset-2">
+                    {spot.tel}
+                  </a>
+                ) : (
+                  <span>{spot.tel}</span>
+                )}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         {spot.overview ? <SpotOverview text={spot.overview} /> : null}
 
@@ -181,7 +190,7 @@ export default async function SpotDetailPage({
                         alt=""
                         fill
                         sizes="56px"
-                        className="object-cover"
+                        className="object-cover photo-warm"
                         unoptimized={alt.spot.image_url.endsWith(".bmp")}
                       />
                     ) : null}

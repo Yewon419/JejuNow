@@ -18,7 +18,7 @@ export function FeatureCourseCard({ spot, congestion }: { spot: Spot; congestion
           alt={spot.name}
           fill
           sizes="(max-width: 640px) 100vw, 600px"
-          className="object-cover"
+          className="object-cover photo-warm"
           priority
           unoptimized={spot.image_url.endsWith(".bmp")}
         />

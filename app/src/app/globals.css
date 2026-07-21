@@ -44,6 +44,12 @@ html {
   background: var(--color-bg);
 }
 
+/* TourAPI 사진은 색온도·채도가 제각각이라 섞이면 지저분하다. 살짝 warm하게 톤을 통일해
+   브랜드감을 준다(sepia는 아주 약하게 — 과하면 누렇다). 혼잡도 색·아이콘에는 절대 쓰지 않는다. */
+.photo-warm {
+  filter: saturate(1.08) contrast(1.02) brightness(1.01) sepia(0.06);
+}
+
 body {
   background: var(--color-bg);
   color: var(--color-ink);
