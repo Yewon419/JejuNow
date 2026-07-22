@@ -142,6 +142,11 @@ export function formatKstDate(dateStr: string): string {
   return `${m}월 ${d}일 ${weekday}요일`;
 }
 
+/** 오늘(KST) 날짜 문자열 — 호라이즌 보정 없는 원값 ("지금" 표시 대조용) */
+export function kstTodayStr(): string {
+  return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
 /** 호라이즌 내로 날짜를 보정한 오늘(KST) 문자열 */
 export function todayInHorizon(): string {
   const now = new Date(Date.now() + 9 * 3600 * 1000);

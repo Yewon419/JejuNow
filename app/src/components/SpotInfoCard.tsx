@@ -1,0 +1,117 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { cleanHours } from "@/lib/constants";
+import { tapLight } from "@/lib/haptics";
+
+/** tel: 링크용 — 숫자·+·- 만 남긴다. 대표번호 외 부가 텍스트가 섞인 값이면 링크 생략 */
+function telHref(tel: string): string | undefined {
+  const digits = tel.replace(/[^0-9+-]/g, "");
+  return /^[+]?[0-9][0-9-]{7,}$/.test(digits) ? `tel:${digits}` : undefined;
+}
+
+const ICON = {
+  clock: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
+  phone: (
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z"
+    />
+  ),
+  pin: (
+    <>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25s-7.5-4.108-7.5-11.25a7.5 7.5 0 1 1 15 0Z"
+      />
+    </>
+  ),
+} as const;
+
+function InfoRow({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-3">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.6}
+        className="mt-0.5 h-4.5 w-4.5 shrink-0 text-dim"
+        aria-hidden
+      >
+        {icon}
+      </svg>
+      <div className="min-w-0 flex-1 text-sm leading-relaxed text-ink">{children}</div>
+    </div>
+  );
+}
+
+/** 운영·전화·주소를 아이콘 행으로 (네이버 플레이스·트리플 문법). 주소는 탭하면 복사. */
+export function SpotInfoCard({
+  hours,
+  tel,
+  addr,
+}: {
+  hours: string | null;
+  tel: string | null;
+  addr: string | null;
+}) {
+  const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    },
+    [],
+  );
+
+  if (!hours && !tel && !addr) return null;
+
+  const copyAddr = async () => {
+    if (!addr) return;
+    try {
+      await navigator.clipboard.writeText(addr);
+      tapLight();
+      setCopied(true);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // 클립보드 미지원(비보안 컨텍스트 등) — 조용히 무시
+    }
+  };
+
+  return (
+    <div className="space-y-3 rounded-card bg-card p-4 shadow-card">
+      {hours ? <InfoRow icon={ICON.clock}>{cleanHours(hours)}</InfoRow> : null}
+      {tel ? (
+        <InfoRow icon={ICON.phone}>
+          {telHref(tel) ? (
+            <a href={telHref(tel)} className="text-primary underline underline-offset-2">
+              {tel}
+            </a>
+          ) : (
+            <span>{tel}</span>
+          )}
+        </InfoRow>
+      ) : null}
+      {addr ? (
+        <InfoRow icon={ICON.pin}>
+          <button
+            type="button"
+            onClick={copyAddr}
+            className="cursor-pointer text-left"
+            aria-label="주소 복사"
+          >
+            {addr}
+            <span className={`ml-2 text-xs font-semibold ${copied ? "text-lv1" : "text-primary"}`}>
+              {copied ? "복사됨" : "복사"}
+            </span>
+          </button>
+        </InfoRow>
+      ) : null}
+    </div>
+  );
+}

@@ -22,10 +22,18 @@ export interface KakaoCustomOverlay {
   setZIndex(zIndex: number): void;
 }
 
+export interface KakaoStaticMap {
+  readonly __brand?: "KakaoStaticMap";
+}
+
 export interface KakaoMapsApi {
   load(callback: () => void): void;
   LatLng: new (lat: number, lng: number) => KakaoLatLng;
   Map: new (container: HTMLElement, options: { center: KakaoLatLng; level: number }) => KakaoMapObj;
+  StaticMap: new (
+    container: HTMLElement,
+    options: { center: KakaoLatLng; level?: number; marker?: { position?: KakaoLatLng } },
+  ) => KakaoStaticMap;
   CustomOverlay: new (options: {
     position: KakaoLatLng;
     content: HTMLElement;

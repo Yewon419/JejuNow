@@ -2,14 +2,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CoachMark } from "@/components/CoachMark";
-import { LevelBadge } from "@/components/LevelBadge";
+import { LevelBadge, LevelDot } from "@/components/LevelBadge";
+import { SpotInfoCard } from "@/components/SpotInfoCard";
+import { SpotMiniMap } from "@/components/SpotMiniMap";
 import { SpotOverview } from "@/components/SpotOverview";
 import { findAlternatives } from "@/lib/alternatives";
 import { SPOT_COACH } from "@/lib/coach";
 import {
   LEVEL_COLOR,
+  LEVEL_LABEL,
   catLabel,
-  cleanHours,
+  kstTodayStr,
+  nowKstHourClamped,
   spotDisplayName,
   spotNameNote,
   todayInHorizon,
@@ -25,12 +29,6 @@ export const revalidate = 300;
 // 스팟 801개를 전부 프리렌더하면 빌드가 과도하게 길어져 on-demand 생성 후 캐시를 택했다.
 export function generateStaticParams(): { id: string }[] {
   return [];
-}
-
-/** tel: 링크용 — 숫자·+·- 만 남긴다. 대표번호 외 부가 텍스트가 섞인 값이면 링크 생략 */
-function telHref(tel: string): string | undefined {
-  const digits = tel.replace(/[^0-9+-]/g, "");
-  return /^[+]?[0-9][0-9-]{7,}$/.test(digits) ? `tel:${digits}` : undefined;
 }
 
 export default async function SpotDetailPage({
@@ -62,8 +60,12 @@ export default async function SpotDetailPage({
   const alternatives = findAlternatives(spot as Spot, allSpots, congestionAtRef, 4);
   const maxPressure = Math.max(1, ...day.map((d) => d.pressure));
 
+  // "지금" 표시(구글 피크 시간대 문법) — 호라이즌 클램프로 date가 오늘이 아닐 수 있어 대조
+  const nowHour = date === kstTodayStr() ? nowKstHourClamped() : null;
+  const nowC = nowHour !== null ? (day.find((d) => d.hour === nowHour) ?? null) : null;
+
   return (
-    <main className="mx-auto min-h-dvh max-w-xl pb-12">
+    <main className="mx-auto min-h-dvh max-w-xl pb-32">
       <CoachMark id="spot" steps={SPOT_COACH} />
       <div
         className={`relative h-80 w-full ${
@@ -106,33 +108,12 @@ export default async function SpotDetailPage({
           {spotNameNote(spot.name) ? (
             <p className="mt-1 text-sm font-medium text-white/85">{spotNameNote(spot.name)}</p>
           ) : null}
-          {spot.addr ? <p className="mt-2 text-sm text-white/85">{spot.addr}</p> : null}
+          {/* 주소는 정보 카드(복사 가능)로 이동 — 히어로는 이름·수식만 남긴다 */}
         </header>
       </div>
 
       <div className="relative -mt-6 space-y-8 rounded-t-3xl bg-bg px-5 pt-8">
-        {spot.opening_hours || spot.tel ? (
-          <div className="space-y-1.5 rounded-card bg-card p-4 shadow-card">
-            {spot.opening_hours ? (
-              <p className="flex gap-2 text-sm text-ink">
-                <span className="shrink-0 font-semibold text-dim">운영</span>
-                <span className="leading-relaxed">{cleanHours(spot.opening_hours)}</span>
-              </p>
-            ) : null}
-            {spot.tel ? (
-              <p className="flex gap-2 text-sm text-ink">
-                <span className="shrink-0 font-semibold text-dim">전화</span>
-                {telHref(spot.tel) ? (
-                  <a href={telHref(spot.tel)} className="text-primary underline underline-offset-2">
-                    {spot.tel}
-                  </a>
-                ) : (
-                  <span>{spot.tel}</span>
-                )}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
+        <SpotInfoCard hours={spot.opening_hours} tel={spot.tel} addr={spot.addr} />
 
         {spot.overview ? <SpotOverview text={spot.overview} /> : null}
 
@@ -144,21 +125,32 @@ export default async function SpotDetailPage({
           <p className="mb-4 text-xs text-dim">{date} · 예측값</p>
           {day.length > 0 ? (
             <>
-              <div className="flex h-36 items-end gap-1" role="img" aria-label="시간대별 혼잡도 막대그래프">
-                {day.map((d, i) => (
-                  <div key={d.hour} className="flex flex-1 flex-col items-center gap-1">
-                    <div
-                      className="w-full origin-bottom rounded-t-md animate-bar-grow"
-                      style={{
-                        height: `${Math.max(6, (d.pressure / maxPressure) * 120)}px`,
-                        backgroundColor: LEVEL_COLOR[d.level],
-                        opacity: 0.9,
-                        animationDelay: `${i * 35}ms`,
-                      }}
-                    />
-                    <span className="text-[10px] text-dim">{d.hour}</span>
-                  </div>
-                ))}
+              <div className="flex h-40 items-end gap-1" role="img" aria-label="시간대별 혼잡도 막대그래프">
+                {day.map((d, i) => {
+                  const isNow = nowHour !== null && d.hour === nowHour;
+                  return (
+                    <div key={d.hour} className="flex flex-1 flex-col items-center gap-1">
+                      {/* 구글 피크 시간대 문법: 현재 시각 막대에 「지금」 마커 */}
+                      {isNow ? (
+                        <span className="whitespace-nowrap text-[9px] font-bold text-ink">지금</span>
+                      ) : null}
+                      <div
+                        className={`w-full origin-bottom rounded-t-md animate-bar-grow ${
+                          isNow ? "ring-2 ring-ink/60" : ""
+                        }`}
+                        style={{
+                          height: `${Math.max(6, (d.pressure / maxPressure) * 120)}px`,
+                          backgroundColor: LEVEL_COLOR[d.level],
+                          opacity: isNow ? 1 : 0.9,
+                          animationDelay: `${i * 35}ms`,
+                        }}
+                      />
+                      <span className={isNow ? "text-[10px] font-bold text-ink" : "text-[10px] text-dim"}>
+                        {d.hour}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 {calmHour ? (
@@ -225,12 +217,41 @@ export default async function SpotDetailPage({
           </ul>
         </section>
 
-        <Link
-          href="/schedule"
-          className="block w-full rounded-card bg-cta py-4 text-center text-base font-bold text-on-cta transition-transform active:scale-[0.98]"
+        <SpotMiniMap spotId={spotId} lat={spot.lat} lng={spot.lng} addr={spot.addr} />
+      </div>
+
+      {/* 스티키 하단 바 (Airbnb·Klook 문법): 지금 혼잡도 요약 + CTA. BottomNav와 같은
+          구조로 바닥에 붙이고 홈 인디케이터는 배경 padding으로 덮는다 */}
+      <div className="fixed inset-x-0 bottom-0 z-40">
+        <div
+          className="mx-auto flex max-w-md items-center gap-3 border-t border-line bg-surface px-5 pt-3 sm:border-x"
+          style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
         >
-          일정에 넣고 혼잡도 점검하기
-        </Link>
+          <div className="min-w-0 flex-1">
+            {nowC ? (
+              <>
+                <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
+                  <LevelDot level={nowC.level} size={10} />
+                  지금 {LEVEL_LABEL[nowC.level] ?? "?"}
+                  {nowC.is_imputed ? <span className="font-normal text-dim">· 추정</span> : null}
+                </p>
+                {calmHour ? (
+                  <p className="mt-0.5 text-xs text-dim">{calmHour.hour}시가 가장 한적해요</p>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-sm font-medium text-dim">
+                {calmHour ? `${calmHour.hour}시가 가장 한적해요` : "예측 준비 중"}
+              </p>
+            )}
+          </div>
+          <Link
+            href="/schedule"
+            className="shrink-0 rounded-card bg-cta px-6 py-3.5 text-sm font-bold text-on-cta transition-transform active:scale-[0.97]"
+          >
+            일정에 넣기
+          </Link>
+        </div>
       </div>
     </main>
   );

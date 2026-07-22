@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { MapView } from "@/components/MapView";
 import { nowKstHourClamped, todayInHorizon } from "@/lib/constants";
 import { fetchSpots } from "@/lib/supabase";
@@ -8,6 +9,9 @@ export const revalidate = 300;
 export default async function MapPage() {
   const spots = await fetchSpots();
   return (
-    <MapView spots={spots} initialDate={todayInHorizon()} initialHour={nowKstHourClamped()} />
+    // Suspense: MapView가 useSearchParams(?spot= 포커스)를 쓰므로 프리렌더 경계 필요
+    <Suspense>
+      <MapView spots={spots} initialDate={todayInHorizon()} initialHour={nowKstHourClamped()} />
+    </Suspense>
   );
 }

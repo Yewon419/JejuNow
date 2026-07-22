@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MAP_COACH } from "@/lib/coach";
@@ -54,6 +55,9 @@ export function MapView({
   } | null>(null);
 
   const jsKey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
+  // 상세 「지도에서 보기」 진입 — 서버 searchParams로 읽으면 라우트가 동적이 돼
+  // ISR 캐시가 죽으므로(page는 Suspense로 감쌈) 클라이언트에서 읽는다
+  const focusId = Number(useSearchParams().get("spot") ?? "");
 
   // 혼잡도 로드
   useEffect(() => {
@@ -70,7 +74,11 @@ export function MapView({
     };
   }, [date, hour]);
 
+  // Script onLoad와 마운트 체크 두 경로에서 불릴 수 있어 1회만 실행되게 잠근다
+  const initedRef = useRef(false);
   const initMap = useCallback(() => {
+    if (initedRef.current) return;
+    initedRef.current = true;
     const kakao = window.kakao;
     const container = containerRef.current;
     if (!kakao || !container) {
@@ -100,8 +108,20 @@ export function MapView({
       }
       setOverlayNodes(nodes);
       setStatus("ready");
+      const focus = spots.find((s) => s.spot_id === focusId);
+      if (focus) {
+        map.setCenter(new kakao.maps.LatLng(focus.lat, focus.lng));
+        map.setLevel(8);
+        setSelected(focus);
+      }
     });
-  }, [spots]);
+  }, [spots, focusId]);
+
+  // SDK가 이미 로드돼 있으면(상세 미니 지도·경로 모달 경유) 같은 src의 Script onLoad가
+  // 다시 안 불린다 — 마운트 시점에 직접 초기화 (RouteView와 동일 방어)
+  useEffect(() => {
+    if (window.kakao) initMap();
+  }, [initMap]);
 
   const selectedCongestion = selected ? congestion.get(selected.spot_id) : undefined;
 
