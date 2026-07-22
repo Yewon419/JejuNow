@@ -168,6 +168,26 @@ iOS CI 함정 3건 (전부 실패 후 수정):
   dev·프로덕션 실측 — stylesheet HEAD 안, 폰트 로드 정상, 경고 0건
 - 검증: tsc·eslint 0 / Vercel 배포 / 전 화면 393·375px 재캡처(가로 넘침 0)
 
+**상세 페이지 개편 (2026-07-22 저녁, 커밋 aa38ad4 — 레퍼런스 조사 기반):**
+- 조사: Airbnb/Klook(스티키 하단 CTA 바), Google 지도 피크 시간대("지금" 마커),
+  네이버 플레이스/트리플(아이콘 정보 행), Airbnb 위치 섹션(미니 지도). 대표님 4건 전부 승인
+- 스티키 바: 지금 혼잡도 요약(LevelDot+라벨+추정 표시, date가 오늘일 때만) + "일정에 넣기".
+  BottomNav와 같은 bottom:0 + 배경 padding 인셋 구조. 본문 pb-32로 가림 방지
+- 차트 "지금": 현재 시각 막대 ring + 「지금」 라벨 + 시각 볼드. `kstTodayStr()` 신설
+  (컴포넌트에서 Date.now 직접 호출은 react-hooks/purity 룰이 막는다 — lib 헬퍼로)
+- SpotInfoCard(client): 운영·전화·주소 아이콘 행, 주소 탭 복사(클립보드+햅틱).
+  히어로의 주소는 여기로 이동(중복 제거 — "히어로엔 이름·수식만"으로 결정 변경)
+- SpotMiniMap: Kakao **StaticMap**(스크롤 중 제스처 충돌 없음) + 「지도에서 보기」 →
+  `/map?spot=` 포커스(센터+레벨8+시트 오픈). ⚠ 포커스 파라미터는 서버 searchParams로
+  읽으면 라우트가 동적이 돼 ISR이 죽는다 — MapView에서 useSearchParams(+page Suspense)
+- ⚠ **잠재 버그 수정**: SDK가 이미 로드된 채 지도 탭 진입(상세 미니 지도·경로 모달 경유)
+  시 같은 src의 next/script onLoad가 재발화하지 않아 지도가 영영 "불러오는 중"이었다.
+  MapView·SpotMiniMap에 마운트 시 window.kakao 체크 + 1회 실행 가드(RouteView 기존 방어와 동일)
+- ⚠ localhost는 Kakao JS 키 도메인 미등록이라 SDK가 ERR_BLOCKED_BY_ORB로 죽는다 —
+  지도 관련 검증은 프로덕션에서만 가능
+- 검증: tsc·eslint 0 / 프로덕션 실측(스티키 바·지금 마커·미니 지도·포커스 시트·신규
+  방문 지도 81마커·가로 넘침 0)
+
 **심사 준비 항목 (2026-07-20):**
 - ✅ 연령 등급 **4+** (7단계 설문 전부 응답, 172개국 적용). 「제한되지 않은 웹 액세스」는
   **아니요** — 웹뷰지만 주소창·자유 브라우징 UI가 없어 임의 웹페이지 탐색이 불가.
