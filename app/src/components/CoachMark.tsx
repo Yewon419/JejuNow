@@ -11,6 +11,7 @@ const PAD = 8; // 스포트라이트가 대상보다 살짝 넓게 뚫리도록
 function readRect(anchor: string): Rect | null {
   const el = document.querySelector(`[data-coach="${anchor}"]`);
   if (!el) return null;
+  scrollAnchorIntoView(el);
   const r = el.getBoundingClientRect();
   if (r.width === 0 && r.height === 0) return null;
   return {
@@ -19,6 +20,18 @@ function readRect(anchor: string): Rect | null {
     width: r.width + PAD * 2,
     height: r.height + PAD * 2,
   };
+}
+
+// 앵커가 첫 화면 밖(상세의 차트·대안 등)이면 스포트라이트·버튼이 전부 화면 밖에 그려져
+// 어두운 오버레이만 남고 끌 수 없다. body 스크롤 잠금이 이미 걸린 뒤일 수 있으므로
+// 잠깐 풀고 앵커를 화면 중앙으로 데려온 뒤 되건다.
+function scrollAnchorIntoView(el: Element): void {
+  const r = el.getBoundingClientRect();
+  if (r.top >= 0 && r.bottom <= window.innerHeight) return;
+  const prev = document.body.style.overflow;
+  document.body.style.overflow = "";
+  el.scrollIntoView({ block: "center", behavior: "auto" });
+  document.body.style.overflow = prev;
 }
 
 export function CoachMark({ id, steps }: { id: CoachId; steps: CoachStep[] }) {
@@ -58,7 +71,9 @@ export function CoachMark({ id, steps }: { id: CoachId; steps: CoachStep[] }) {
         return;
       }
       const r = readRect(step.anchor);
-      if (r) {
+      // 스크롤로도 화면 안에 못 데려온 앵커는 건너뛴다 — 오버레이만 남는 잠금 방지
+      const visible = r !== null && r.top < window.innerHeight && r.top + r.height > 0;
+      if (r && visible) {
         shownRef.current = true;
         setRect(r);
       } else {
@@ -111,9 +126,14 @@ export function CoachMark({ id, steps }: { id: CoachId; steps: CoachStep[] }) {
         }}
       />
 
+      {/* 클램프: 앵커가 뷰포트만큼 큰 섹션이면 말풍선이 화면 밖으로 밀린다 — 잘리느니 겹친다 */}
       <div
         className="absolute inset-x-4 rounded-card bg-surface p-5 shadow-card"
-        style={below ? { top: rect.top + rect.height + 14 } : { bottom: window.innerHeight - rect.top + 14 }}
+        style={
+          below
+            ? { top: Math.min(rect.top + rect.height + 14, window.innerHeight - 240) }
+            : { bottom: Math.min(window.innerHeight - rect.top + 14, window.innerHeight - 240) }
+        }
       >
         <p className="text-xs font-semibold text-primary">
           {index + 1} / {steps.length}
