@@ -103,6 +103,28 @@ iOS CI 함정 3건 (전부 실패 후 수정):
 - ⚠ **전국 확대 계획** 확인(디자인·색·카피에서 제주 로컬 특화 지양) — 상세 [[project_jejunow]]
 - 검증: 전 단계 tsc·eslint 0오류 + web-runtime-verify로 화면별 스크린샷/모션 프레임 대조
 
+**경로 기능 2단 보강 (2026-07-21~22):**
+- 진단: 경로는 고장이 아니었다. 앱·인증·Vercel 함수·지도 렌더 전부 정상(도로 접근 좋은
+  스팟은 앱 내 폴리라인 정상). 성산일출봉 등 **유명 관광지 좌표가 봉우리·해안 정중앙**이라
+  카카오내비가 "주변 도로 없음(102)"으로 거부 → 폴백으로 빠지던 구조적 한계.
+  ⚠ 카카오내비 API에 좌표→도로 스냅(radius) 옵션 없음(origin/destination은 name·angle만)
+- ① 폴백 UX 개선(커밋 560f050): `fetchRoute` 리턴을 실패 이유 union으로 —
+  422=`offroad`(확정, 캐시 유지)는 "도보·자연 구간이라 경로를 그릴 수 없어요" 안내 톤 +
+  직선거리(haversine), 그 외=`error`(콜드스타트·타임아웃, 캐시 비움)는 재시도 톤
+- ② 도로 접근점 좌표 보정(커밋 78a03dc): 스팟별 최근접 주차장(카카오 PK6, 반경 800m)
+  좌표를 `route_lat/lng`로 저장, **경로 계산에만** 사용(마커·거리·상세 표시는 원 좌표 유지).
+  590/802(73.6%) 확보. 800m는 전체 dry-run 거리 분포로 결정(≤300m 396·1km↑ 오매칭 82개 배제)
+  - 마이그레이션 0005(`spots.route_lat/lng`, Chrome으로 원격 SQL Editor 적용),
+    `api/collectors/backfill_route_coords.py`, `SupabaseRest.update`(PATCH) 추가
+  - ⚠ **대량 백필 upsert 불가 함정**: `spot_id`는 generated always identity라 값 삽입
+    거부(428C9), `content_id`는 PostgREST가 non-PK unique 충돌을 못 잡아 신규 INSERT로
+    빠져 name not-null 위반(23502). → **개별 UPDATE(PATCH by spot_id)**가 유일 해법.
+    즉시 반영이라 중단돼도 확보분 남음(재실행 안전). 스팟 추가 시 `--apply`로 재실행
+  - `routeCoord()` 헬퍼로 `fetchRoute`·`RouteView`가 route 좌표 우선(없으면 원 좌표 폴백).
+    지도 라벨도 폴리라인과 정합되게 route 좌표로
+  - 검증: 성산일출봉→만장굴 원좌표 422 → route좌표 **200(22.4km·35분)** 앱 내 지도 렌더 확인
+  - TestFlight는 `server.url`이 Vercel이라 두 커밋 다 앱 새로고침만으로 반영
+
 **심사 준비 항목 (2026-07-20):**
 - ✅ 연령 등급 **4+** (7단계 설문 전부 응답, 172개국 적용). 「제한되지 않은 웹 액세스」는
   **아니요** — 웹뷰지만 주소창·자유 브라우징 UI가 없어 임의 웹페이지 탐색이 불가.
