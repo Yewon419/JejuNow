@@ -4,6 +4,7 @@ import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type RouteData, fetchRoute, formatDuration, routeCoord } from "@/lib/api";
 import { haversineKm } from "@/lib/alternatives";
+import { spotDisplayName } from "@/lib/constants";
 import type { Spot } from "@/lib/types";
 
 type Status = "loading" | "ready" | "failed";
@@ -82,7 +83,7 @@ export function RouteView({
         ["도착", to, "#0e7d8c"],
       ] as const) {
         const node = document.createElement("div");
-        node.textContent = `${label} · ${spot.name}`;
+        node.textContent = `${label} · ${spotDisplayName(spot.name)}`;
         node.style.cssText =
           `background:${color};color:#fff;font-size:11px;font-weight:700;` +
           "padding:4px 10px;border-radius:9999px;box-shadow:0 1px 4px rgb(16 33 58/.4);" +
@@ -108,7 +109,7 @@ export function RouteView({
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
       role="dialog"
       aria-modal="true"
-      aria-label={`${from.name}에서 ${to.name}까지 경로`}
+      aria-label={`${spotDisplayName(from.name)}에서 ${spotDisplayName(to.name)}까지 경로`}
     >
       {jsKey ? (
         <Script
@@ -128,7 +129,8 @@ export function RouteView({
       >
         <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
           <p className="min-w-0 truncate text-sm font-bold text-ink">
-            {from.name} <span className="text-dim">→</span> {to.name}
+            {spotDisplayName(from.name)} <span className="text-dim">→</span>{" "}
+            {spotDisplayName(to.name)}
           </p>
           <button
             type="button"

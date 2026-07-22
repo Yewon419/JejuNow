@@ -21,6 +21,7 @@ import {
   HOUR_MAX,
   HOUR_MIN,
   catLabel,
+  spotDisplayName,
   todayInHorizon,
 } from "@/lib/constants";
 import { fetchCongestionClient } from "@/lib/supabaseClient";
@@ -266,7 +267,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                     )}
                   </select>
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-ink">{spot.name}</p>
+                    <p className="truncate font-semibold text-ink">{spotDisplayName(spot.name)}</p>
                     <p className="text-xs text-dim">{catLabel(spot.cat2)}</p>
                   </div>
                 </div>
@@ -302,7 +303,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                             href={`/spots/${alt.spot.spot_id}`}
                             className="min-w-0 truncate text-sm font-medium text-primary"
                           >
-                            {alt.spot.name}
+                            {spotDisplayName(alt.spot.name)}
                           </Link>
                           <span className="flex shrink-0 items-center gap-2 text-xs text-dim">
                             {alt.distanceKm}km

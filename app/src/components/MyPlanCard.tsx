@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { formatKstDate, LEVEL_COLOR } from "@/lib/constants";
+import { formatKstDate, LEVEL_COLOR, spotDisplayName } from "@/lib/constants";
 import type { Congestion, ScheduleSlot, Spot } from "@/lib/types";
 
 const STORAGE_KEY = "jejunow:schedule";
@@ -90,7 +90,7 @@ export function MyPlanCard({
                   ) : null}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
-                  {spot.name}
+                  {spotDisplayName(spot.name)}
                 </span>
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"

@@ -1,12 +1,25 @@
 import { LEVEL_COLOR, LEVEL_LABEL } from "@/lib/constants";
 
-/** 혼잡도 점(초안 톤) + 라벨. 작은 컬러 도트 중심. */
-export function LevelBadge({ level, imputed }: { level: number; imputed?: boolean }) {
+/** 혼잡도 점(초안 톤) + 라벨. 작은 컬러 도트 중심.
+ *  onPhoto: 사진 오버레이용 — 10% 알파 배경은 사진 위에서 묻히므로 불투명 흰 칩으로 */
+export function LevelBadge({
+  level,
+  imputed,
+  onPhoto,
+}: {
+  level: number;
+  imputed?: boolean;
+  onPhoto?: boolean;
+}) {
   const color = LEVEL_COLOR[level] ?? LEVEL_COLOR[1];
   return (
     <span
-      className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold"
-      style={{ backgroundColor: `${color}1a`, color }}
+      className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${onPhoto ? "shadow-sm" : ""}`}
+      style={
+        onPhoto
+          ? { backgroundColor: "rgba(255,255,255,0.92)", color }
+          : { backgroundColor: `${color}1a`, color }
+      }
     >
       <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} aria-hidden />
       {LEVEL_LABEL[level] ?? "?"}

@@ -70,6 +70,30 @@ export function catLabel(cat2: string | null): string {
   return CAT_LABEL[cat2] ?? "기타";
 }
 
+// 데이터 원본 이름의 괄호 수식 — "성산일출봉 [유네스코 세계자연유산]" 류는 좁은 카드에서
+// 본이름이 잘리므로 표시용으론 괄호 앞까지만 쓴다. 이름이 괄호로 시작하면 원본 유지.
+const NAME_NOTE_RE = /[([（［]/;
+
+/** 표시용 스팟 이름 — 첫 괄호(반각·전각) 앞까지. 선택 시트처럼 구분이 필요한 곳엔 원본을 쓴다 */
+export function spotDisplayName(name: string): string {
+  const cut = name.search(NAME_NOTE_RE);
+  if (cut <= 0) return name.trim();
+  const short = name.slice(0, cut).trim();
+  return short.length > 0 ? short : name.trim();
+}
+
+/** 표시용 이름에서 떼어낸 괄호 수식 내용("유네스코 세계자연유산" 등) — 상세 히어로 보조 표기용 */
+export function spotNameNote(name: string): string | null {
+  const cut = name.search(NAME_NOTE_RE);
+  if (cut <= 0) return null;
+  const note = name
+    .slice(cut)
+    .replace(/[()[\]（）［］]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return note.length > 0 ? note : null;
+}
+
 /** TourAPI 운영시간의 HTML 잔재(<br> 등)를 표시용 한 줄로 정리 */
 export function cleanHours(text: string): string {
   return text

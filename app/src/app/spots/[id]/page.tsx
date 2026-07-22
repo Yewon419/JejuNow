@@ -6,7 +6,14 @@ import { LevelBadge } from "@/components/LevelBadge";
 import { SpotOverview } from "@/components/SpotOverview";
 import { findAlternatives } from "@/lib/alternatives";
 import { SPOT_COACH } from "@/lib/coach";
-import { LEVEL_COLOR, catLabel, cleanHours, todayInHorizon } from "@/lib/constants";
+import {
+  LEVEL_COLOR,
+  catLabel,
+  cleanHours,
+  spotDisplayName,
+  spotNameNote,
+  todayInHorizon,
+} from "@/lib/constants";
 import { fetchCongestion, fetchSpotById, fetchSpotDay, fetchSpots } from "@/lib/supabase";
 import type { Congestion, Spot } from "@/lib/types";
 
@@ -93,8 +100,12 @@ export default async function SpotDetailPage({
           {/* 히어로엔 이름·지역·주소만 — 운영시간·전화 같은 긴 정보는 사진 밖 카드로 내렸다
               (긴 운영시간이 사진을 덮어 사진도 글도 안 살던 문제) */}
           <h1 className="mt-1 text-[2rem] font-bold leading-tight text-white [text-shadow:0_1px_12px_rgb(0_0_0/0.4)]">
-            {spot.name}
+            {spotDisplayName(spot.name)}
           </h1>
+          {/* 괄호 수식("유네스코 세계자연유산" 등)은 제목에서 떼고 여기서만 보조 표기 */}
+          {spotNameNote(spot.name) ? (
+            <p className="mt-1 text-sm font-medium text-white/85">{spotNameNote(spot.name)}</p>
+          ) : null}
           {spot.addr ? <p className="mt-2 text-sm text-white/85">{spot.addr}</p> : null}
         </header>
       </div>
@@ -197,7 +208,7 @@ export default async function SpotDetailPage({
                     ) : null}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-ink">{alt.spot.name}</p>
+                    <p className="truncate font-semibold text-ink">{spotDisplayName(alt.spot.name)}</p>
                     <p className="text-xs text-dim">
                       {alt.spot.region} · {alt.distanceKm}km
                     </p>

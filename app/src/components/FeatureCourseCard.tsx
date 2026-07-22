@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { catLabel, LEVEL_COLOR, LEVEL_LABEL } from "@/lib/constants";
+import { catLabel, LEVEL_COLOR, LEVEL_LABEL, spotDisplayName } from "@/lib/constants";
 import type { Congestion, Spot } from "@/lib/types";
 
 /** 초안의 큰 "추천 코스" 카드 — 사진 위 텍스트 오버레이 + CTA. */
@@ -15,7 +15,7 @@ export function FeatureCourseCard({ spot, congestion }: { spot: Spot; congestion
       {spot.image_url ? (
         <Image
           src={spot.image_url}
-          alt={spot.name}
+          alt={spotDisplayName(spot.name)}
           fill
           sizes="(max-width: 640px) 100vw, 600px"
           className="object-cover photo-warm"
@@ -35,7 +35,7 @@ export function FeatureCourseCard({ spot, congestion }: { spot: Spot; congestion
           지금 {LEVEL_LABEL[level] ?? "한적"} · 추천 코스
         </span>
         <h3 className="mt-2 text-2xl font-bold text-white [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]">
-          {spot.name}
+          {spotDisplayName(spot.name)}
         </h3>
         <p className="text-sm text-white/90 [text-shadow:0_1px_6px_rgba(0,0,0,0.5)]">
           {spot.region} · {catLabel(spot.cat2)}

@@ -11,6 +11,7 @@ import {
   kstDayPart,
   kstGreeting,
   nowKstHourClamped,
+  spotDisplayName,
   todayInHorizon,
 } from "@/lib/constants";
 import { fetchCongestion, fetchSpots, fetchWeatherMonth } from "@/lib/supabase";
@@ -152,10 +153,10 @@ export default async function DashboardPage() {
                   aria-hidden
                 />
                 <div className="absolute left-2.5 top-2.5">
-                  <LevelBadge level={c.level} />
+                  <LevelBadge level={c.level} onPhoto />
                 </div>
                 <p className="absolute inset-x-0 bottom-0 truncate p-3 text-sm font-bold text-white [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">
-                  {s.name}
+                  {spotDisplayName(s.name)}
                 </p>
               </Link>
             ))}

@@ -14,6 +14,7 @@ import {
   LEVEL_COLOR,
   catLabel,
   cleanHours,
+  spotDisplayName,
 } from "@/lib/constants";
 import type { KakaoCustomOverlay, KakaoMapObj } from "@/lib/kakao";
 import { fetchCongestionClient, fetchSpotDayClient } from "@/lib/supabaseClient";
@@ -260,7 +261,9 @@ export function MapView({
                     className="flex items-center justify-between rounded-card border border-line bg-card p-3"
                   >
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold text-ink">{s.name}</span>
+                      <span className="block truncate text-sm font-semibold text-ink">
+                        {spotDisplayName(s.name)}
+                      </span>
                       <span className="text-xs text-dim">
                         {s.region} · {catLabel(s.cat2)}
                       </span>
@@ -310,7 +313,7 @@ export function MapView({
               </button>
               <div className="absolute inset-x-0 bottom-0 px-5 pb-3">
                 <p className="truncate text-xl font-bold text-white [text-shadow:0_1px_6px_rgb(0_0_0/0.35)]">
-                  {selected.name}
+                  {spotDisplayName(selected.name)}
                 </p>
                 <p className="text-xs font-medium text-white/85">
                   {catLabel(selected.cat2)} · {selected.region}

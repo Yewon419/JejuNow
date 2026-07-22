@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { haversineKm } from "@/lib/alternatives";
-import { catLabel } from "@/lib/constants";
+import { catLabel, spotDisplayName } from "@/lib/constants";
 import { FeatureCourseCard } from "./FeatureCourseCard";
 import { LevelBadge } from "./LevelBadge";
 import type { Congestion, ScheduleSlot, Spot } from "@/lib/types";
@@ -132,7 +132,7 @@ export function QuietNearby({
                 >
                   <Image
                     src={s.image_url ?? ""}
-                    alt={s.name}
+                    alt={spotDisplayName(s.name)}
                     fill
                     sizes="160px"
                     className="object-cover photo-warm"
@@ -143,11 +143,11 @@ export function QuietNearby({
                     aria-hidden
                   />
                   <div className="absolute left-2.5 top-2.5">
-                    <LevelBadge level={c.level} imputed={c.is_imputed} />
+                    <LevelBadge level={c.level} imputed={c.is_imputed} onPhoto />
                   </div>
                   <div className="absolute inset-x-0 bottom-0 p-3">
                     <p className="text-sm font-bold leading-snug text-white [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">
-                      {s.name}
+                      {spotDisplayName(s.name)}
                     </p>
                     <p className="mt-0.5 truncate text-[11px] text-white/85">
                       {s.region} · {catLabel(s.cat2)}
