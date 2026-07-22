@@ -71,15 +71,6 @@ export default async function DashboardPage() {
       <div
         className={`relative -mx-5 overflow-hidden px-5 pb-4 pt-[calc(3rem+env(safe-area-inset-top,0px))] ${HERO_GRADIENT[dayPart]}`}
       >
-        {/* 장식 원 — 액센트 계열 소프트 글로우 (정보 아님) */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-10 -top-14 h-48 w-48 rounded-full bg-cta/20 blur-2xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute right-20 top-8 h-24 w-24 rounded-full bg-primary/15 blur-xl"
-        />
       <header className="relative flex items-start justify-between">
         <div>
           <p className="flex items-center gap-1.5 text-sm font-medium text-primary">
