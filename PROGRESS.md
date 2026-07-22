@@ -163,8 +163,9 @@ iOS CI 함정 3건 (전부 실패 후 수정):
 - **LevelBadge onPhoto**: 10% 알파 배경 칩이 사진 위에서 묻힘(캡처 실측) → 흰 불투명
   (0.92) 칩 변형 추가, 홈 캐러셀·붐비는 곳 오버레이에 적용
 - 추천 코스 카드 대비는 확대 실측 결과 기존 스크림 /85가 정상 작동 — 미수정(오판 정정)
-- ⚠ 스코프 밖 발견(미수정): layout의 Pretendard `<link rel="stylesheet">`가 `<head>` 밖에
-  렌더돼 dev에서 hydration 경고 2건(react precedence 요구). 07-20 폰트 최적화 때 유입
+- ✅ layout Pretendard `<link rel="stylesheet">` hydration 경고 2건 해소(승인 후 커밋
+  e634154): React 19는 `precedence`가 있어야 stylesheet를 head로 호이스팅해 관리한다.
+  dev·프로덕션 실측 — stylesheet HEAD 안, 폰트 로드 정상, 경고 0건
 - 검증: tsc·eslint 0 / Vercel 배포 / 전 화면 393·375px 재캡처(가로 넘침 0)
 
 **심사 준비 항목 (2026-07-20):**
