@@ -5,7 +5,14 @@ import { LevelBadge } from "@/components/LevelBadge";
 import { MyPlanCard } from "@/components/MyPlanCard";
 import { QuietNearby } from "@/components/QuietNearby";
 import { DASHBOARD_COACH } from "@/lib/coach";
-import { formatKstDate, kstGreeting, nowKstHourClamped, todayInHorizon } from "@/lib/constants";
+import {
+  type DayPart,
+  formatKstDate,
+  kstDayPart,
+  kstGreeting,
+  nowKstHourClamped,
+  todayInHorizon,
+} from "@/lib/constants";
 import { fetchCongestion, fetchSpots, fetchWeatherMonth } from "@/lib/supabase";
 import type { Congestion, Spot } from "@/lib/types";
 
@@ -13,6 +20,22 @@ import type { Congestion, Spot } from "@/lib/types";
 // ISR로 전환: 렌더된 HTML을 5분간 CDN에서 그대로 내보내 콜드 스타트를 건너뛴다.
 // 시각 의존값(오늘 날짜·현재 시)은 5분마다 재평가되고, 시가 바뀌면 fetch 키가 달라져 새로 조회된다.
 export const revalidate = 300;
+
+// 시간대별 헤더 그라데이션 — 블루 계열만(혼잡도 4색과 충돌 금지). Tailwind JIT가
+// 클래스를 생성하려면 문자열 리터럴이 소스에 있어야 해서 맵으로 나열한다.
+const HERO_GRADIENT: Record<DayPart, string> = {
+  dawn: "bg-gradient-to-b from-[#e4e8f7] via-[#eef1f9] to-bg",
+  morning: "bg-gradient-to-b from-[#d9edfb] via-[#e9f5fd] to-bg",
+  afternoon: "bg-gradient-to-b from-[#d6effa] via-[#e8f6fc] to-bg",
+  evening: "bg-gradient-to-b from-[#e6e8fa] via-[#eff0fb] to-bg",
+  night: "bg-gradient-to-b from-[#dfe3f2] via-[#eceff7] to-bg",
+};
+
+// 인사말 옆 글리프 — 낮엔 해, 밤·새벽엔 달 (heroicons)
+const SUN_PATH =
+  "M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z";
+const MOON_PATH =
+  "M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z";
 
 export default async function DashboardPage() {
   const date = todayInHorizon();
@@ -37,15 +60,36 @@ export default async function DashboardPage() {
     .sort((a, b) => b.c.pressure - a.c.pressure)
     .slice(0, 2);
 
+  const dayPart = kstDayPart();
+  const glyphPath = dayPart === "night" || dayPart === "dawn" ? MOON_PATH : SUN_PATH;
+
   return (
-    <main className="space-y-7 px-5 pt-[calc(3rem+env(safe-area-inset-top,0px))]">
+    <main className="space-y-7 px-5">
       {/* 서버 컴포넌트에서 클라이언트 컴포넌트를 그대로 렌더 — 별도 래퍼 불필요 */}
       <CoachMark id="dashboard" steps={DASHBOARD_COACH} />
-      <header className="flex items-start justify-between">
+      {/* 시간대 그라데이션 히어로 밴드 — 상태바 영역까지 차오르고 bg로 자연스럽게 사라진다 */}
+      <div
+        className={`relative -mx-5 overflow-hidden px-5 pb-4 pt-[calc(3rem+env(safe-area-inset-top,0px))] ${HERO_GRADIENT[dayPart]}`}
+      >
+        {/* 장식 원 — 액센트 계열 소프트 글로우 (정보 아님) */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-10 -top-14 h-48 w-48 rounded-full bg-cta/20 blur-2xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute right-20 top-8 h-24 w-24 rounded-full bg-primary/15 blur-xl"
+        />
+      <header className="relative flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium text-primary">{kstGreeting()}</p>
-          <h1 className="mt-0.5 text-2xl font-bold text-ink">오늘의 제주</h1>
-          <p className="mt-1 text-sm text-dim">{formatKstDate(date)}</p>
+          <p className="flex items-center gap-1.5 text-sm font-medium text-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d={glyphPath} />
+            </svg>
+            {kstGreeting()}
+          </p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">오늘의 제주</h1>
+          <p className="mt-1.5 text-sm text-dim">{formatKstDate(date)}</p>
         </div>
         <div className="flex items-center gap-2">
         {weather?.avg_temp != null ? (
@@ -72,6 +116,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </header>
+      </div>
 
       {/* 담아둔 일정이 있으면 최상단에 — 없으면 스스로 아무것도 그리지 않는다 */}
       <MyPlanCard spots={spots} congestion={congestion} />

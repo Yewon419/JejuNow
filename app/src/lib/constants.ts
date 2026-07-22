@@ -87,6 +87,18 @@ export function nowKstHourClamped(): number {
   return clampHour(new Date(Date.now() + 9 * 3600 * 1000).getUTCHours());
 }
 
+export type DayPart = "dawn" | "morning" | "afternoon" | "evening" | "night";
+
+/** 현재 KST 시각대 구분 — 홈 헤더 그라데이션·글리프 선택용(kstGreeting과 경계 동일) */
+export function kstDayPart(): DayPart {
+  const h = new Date(Date.now() + 9 * 3600 * 1000).getUTCHours();
+  if (h < 6) return "dawn";
+  if (h < 11) return "morning";
+  if (h < 17) return "afternoon";
+  if (h < 21) return "evening";
+  return "night";
+}
+
 /** 현재 KST 시각대 인사말 — 헤더용(시간대 기반, 개인화 아님) */
 export function kstGreeting(): string {
   const h = new Date(Date.now() + 9 * 3600 * 1000).getUTCHours();
