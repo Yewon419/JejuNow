@@ -24,10 +24,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className="h-full antialiased">
-      {/* HTML 파싱 시점에 바로 시작하도록 head로 올린다 (React 19가 호이스팅) */}
+      {/* HTML 파싱 시점에 바로 시작하도록 head로 올린다 (React 19가 호이스팅).
+          stylesheet는 precedence가 있어야 React가 head로 관리 — 없으면 hydration 경고 */}
       <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="" />
       <link
         rel="stylesheet"
+        precedence="default"
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
       />
       <body className="min-h-dvh">
