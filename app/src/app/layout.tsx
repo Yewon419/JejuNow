@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { StaleReload } from "@/components/StaleReload";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -30,6 +31,7 @@ export default function RootLayout({
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
       />
       <body className="min-h-dvh">
+        <StaleReload />
         {/* 폰 프레임 — 데스크톱에서도 모바일 비율(max-w-md)로 중앙 고정 */}
         <div className="mx-auto min-h-dvh w-full max-w-md sm:border-x sm:border-line">
           {children}
