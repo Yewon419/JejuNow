@@ -120,6 +120,20 @@ class SupabaseRest:
                 return rows
             offset += page
 
+    def update(self, table: str, params: dict[str, str], patch: dict[str, object]) -> None:
+        """조건부 UPDATE (PATCH). params는 PostgREST 필터, patch는 갱신할 컬럼.
+        upsert(INSERT ON CONFLICT)와 달리 identity PK·NOT NULL 컬럼과 무관하게 지정 행만 갱신한다.
+        """
+        if not params:
+            raise SupabaseRestError(f"{table} UPDATE: 빈 필터 금지")
+        self._request(
+            "PATCH",
+            table,
+            params=params,
+            body=json.dumps(patch, ensure_ascii=False),
+            prefer="return=minimal",
+        )
+
     def delete_all(self, table: str, key_col: str) -> None:
         """테이블 전체 삭제 (재적재용). PostgREST는 필터 필수라 not.is.null 사용."""
         self._request("DELETE", table, params={key_col: "not.is.null"})

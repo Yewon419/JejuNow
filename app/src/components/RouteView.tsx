@@ -2,7 +2,7 @@
 
 import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { type RouteData, fetchRoute } from "@/lib/api";
+import { type RouteData, fetchRoute, routeCoord } from "@/lib/api";
 import { haversineKm } from "@/lib/alternatives";
 import type { Spot } from "@/lib/types";
 
@@ -57,9 +57,12 @@ export function RouteView({
     const container = containerRef.current;
     if (!kakao || !container || !route) return;
     kakao.maps.load(() => {
+      // 폴리라인이 도로 접근점(주차장) 기준이라 지도 중심·라벨도 route 좌표로 맞춘다
+      const fc = routeCoord(from);
+      const tc = routeCoord(to);
       const center = new kakao.maps.LatLng(
-        (from.lat + to.lat) / 2,
-        (from.lng + to.lng) / 2,
+        (fc.lat + tc.lat) / 2,
+        (fc.lng + tc.lng) / 2,
       );
       const map = new kakao.maps.Map(container, { center, level: 9 });
       const path = route.path.map(([lat, lng]) => new kakao.maps.LatLng(lat, lng));
@@ -84,8 +87,9 @@ export function RouteView({
           `background:${color};color:#fff;font-size:11px;font-weight:700;` +
           "padding:4px 10px;border-radius:9999px;box-shadow:0 1px 4px rgb(16 33 58/.4);" +
           "white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis;";
+        const pc = routeCoord(spot);
         new kakao.maps.CustomOverlay({
-          position: new kakao.maps.LatLng(spot.lat, spot.lng),
+          position: new kakao.maps.LatLng(pc.lat, pc.lng),
           content: node,
           yAnchor: 1.4,
           clickable: false,

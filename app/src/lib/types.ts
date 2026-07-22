@@ -5,6 +5,10 @@ export type Spot = {
   cat2: string | null;
   lat: number;
   lng: number;
+  // 자동차 경로 계산용 도로 접근점(최근접 주차장). 없으면 null → lat/lng로 폴백.
+  // 표시(마커·거리·상세)에는 쓰지 않는다 — 경로 전용.
+  route_lat: number | null;
+  route_lng: number | null;
   addr: string | null;
   opening_hours: string | null;
   image_url: string | null;

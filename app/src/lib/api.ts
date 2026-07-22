@@ -91,6 +91,12 @@ export type RouteResult =
   | { ok: true; data: RouteData }
   | { ok: false; reason: "offroad" | "error" };
 
+/** 경로 계산에 쓸 좌표 — 도로 접근점(route_lat/lng)이 있으면 그것, 없으면 원 좌표.
+ *  봉우리·해안 등 원 좌표가 도로 밖인 스팟의 카카오내비 거부를 피한다. */
+export function routeCoord(s: Spot): { lat: number; lng: number } {
+  return { lat: s.route_lat ?? s.lat, lng: s.route_lng ?? s.lng };
+}
+
 // 경로는 (출발, 도착)당 1회만 카카오 호출 — 칩 시간 표시와 RouteView 모달이 결과 공유
 const routeCache = new Map<string, Promise<RouteResult>>();
 
@@ -102,8 +108,10 @@ export function fetchRoute(from: Spot, to: Spot): Promise<RouteResult> {
   if (cached) return cached;
   const promise = (async (): Promise<RouteResult> => {
     try {
+      const f = routeCoord(from);
+      const t = routeCoord(to);
       const res = await fetch(
-        `/api/kakao-route?from=${from.lat},${from.lng}&to=${to.lat},${to.lng}`,
+        `/api/kakao-route?from=${f.lat},${f.lng}&to=${t.lat},${t.lng}`,
         { signal: AbortSignal.timeout(TIMEOUT_MS) },
       );
       // 422 = 도로 밖 좌표(정상 상황), 그 외 비정상 = 재시도 가능한 오류

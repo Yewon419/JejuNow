@@ -33,7 +33,7 @@ function normalizeSpot<T extends Spot>(s: T): T {
 
 export async function fetchSpots(): Promise<Spot[]> {
   const rows = await rest<Spot[]>(
-    "spots?select=spot_id,name,cat1,cat2,lat,lng,addr,opening_hours,image_url,is_outdoor,region&order=spot_id&limit=2000",
+    "spots?select=spot_id,name,cat1,cat2,lat,lng,route_lat,route_lng,addr,opening_hours,image_url,is_outdoor,region&order=spot_id&limit=2000",
     3600,
   );
   return rows.map(normalizeSpot);
@@ -56,7 +56,7 @@ export async function fetchSpotDay(spotId: number, date: string): Promise<(Conge
 
 export async function fetchSpotById(spotId: number): Promise<SpotDetail | null> {
   const rows = await rest<SpotDetail[]>(
-    `spots?select=spot_id,name,cat1,cat2,lat,lng,addr,opening_hours,image_url,is_outdoor,region,overview,tel&spot_id=eq.${spotId}`,
+    `spots?select=spot_id,name,cat1,cat2,lat,lng,route_lat,route_lng,addr,opening_hours,image_url,is_outdoor,region,overview,tel&spot_id=eq.${spotId}`,
     3600,
   );
   return rows[0] ? normalizeSpot(rows[0]) : null;
