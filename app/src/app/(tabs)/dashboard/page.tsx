@@ -5,7 +5,7 @@ import { LevelBadge } from "@/components/LevelBadge";
 import { MyPlanCard } from "@/components/MyPlanCard";
 import { QuietNearby } from "@/components/QuietNearby";
 import { DASHBOARD_COACH } from "@/lib/coach";
-import { nowKstHourClamped, todayInHorizon } from "@/lib/constants";
+import { formatKstDate, kstGreeting, nowKstHourClamped, todayInHorizon } from "@/lib/constants";
 import { fetchCongestion, fetchSpots, fetchWeatherMonth } from "@/lib/supabase";
 import type { Congestion, Spot } from "@/lib/types";
 
@@ -43,8 +43,9 @@ export default async function DashboardPage() {
       <CoachMark id="dashboard" steps={DASHBOARD_COACH} />
       <header className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-dim">{date}</p>
+          <p className="text-sm font-medium text-primary">{kstGreeting()}</p>
           <h1 className="mt-0.5 text-2xl font-bold text-ink">오늘의 제주</h1>
+          <p className="mt-1 text-sm text-dim">{formatKstDate(date)}</p>
         </div>
         <div className="flex items-center gap-2">
         {weather?.avg_temp != null ? (

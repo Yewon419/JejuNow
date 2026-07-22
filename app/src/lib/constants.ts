@@ -87,6 +87,25 @@ export function nowKstHourClamped(): number {
   return clampHour(new Date(Date.now() + 9 * 3600 * 1000).getUTCHours());
 }
 
+/** 현재 KST 시각대 인사말 — 헤더용(시간대 기반, 개인화 아님) */
+export function kstGreeting(): string {
+  const h = new Date(Date.now() + 9 * 3600 * 1000).getUTCHours();
+  if (h < 6) return "고요한 새벽이에요";
+  if (h < 11) return "좋은 아침이에요";
+  if (h < 17) return "좋은 오후예요";
+  if (h < 21) return "편안한 저녁이에요";
+  return "고요한 밤이에요";
+}
+
+const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"];
+
+/** "YYYY-MM-DD" → "M월 D일 요일" (요일은 UTC 파싱으로 결정적 계산) */
+export function formatKstDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const weekday = WEEKDAY_KO[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `${m}월 ${d}일 ${weekday}요일`;
+}
+
 /** 호라이즌 내로 날짜를 보정한 오늘(KST) 문자열 */
 export function todayInHorizon(): string {
   const now = new Date(Date.now() + 9 * 3600 * 1000);
