@@ -71,18 +71,21 @@ export default async function DashboardPage() {
       <div
         className={`relative -mx-5 overflow-hidden px-5 pb-4 pt-[calc(3rem+env(safe-area-inset-top,0px))] ${HERO_GRADIENT[dayPart]}`}
       >
-      <header className="relative flex items-start justify-between">
-        <div>
-          <p className="flex items-center gap-1.5 text-sm font-medium text-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4" aria-hidden>
-              <path strokeLinecap="round" strokeLinejoin="round" d={glyphPath} />
-            </svg>
-            {kstGreeting()}
-          </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">오늘의 제주</h1>
-          <p className="mt-1.5 text-sm text-dim">{formatKstDate(date)}</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <header className="relative">
+        {/* 브랜드 행: 좌측 로고 락업, 우측 날씨·설정 */}
+        <div className="flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <Image
+              src="/icon.svg"
+              alt=""
+              width={28}
+              height={28}
+              unoptimized
+              className="rounded-lg"
+            />
+            <span className="text-lg font-extrabold tracking-tight text-ink">JejuNow</span>
+          </span>
+          <div className="flex items-center gap-2">
         {weather?.avg_temp != null ? (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-sm font-medium text-ink shadow-card">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4 text-lv2" aria-hidden>
@@ -105,7 +108,18 @@ export default async function DashboardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
             </svg>
           </Link>
+          </div>
         </div>
+
+        {/* 인사·제목·날짜 */}
+        <p className="mt-5 flex items-center gap-1.5 text-sm font-medium text-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d={glyphPath} />
+          </svg>
+          {kstGreeting()}
+        </p>
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">오늘의 제주</h1>
+        <p className="mt-1.5 text-sm text-dim">{formatKstDate(date)}</p>
       </header>
       </div>
 
