@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { LEVEL_COLOR } from "@/lib/constants";
+import { formatKstDate, LEVEL_COLOR } from "@/lib/constants";
 import type { Congestion, ScheduleSlot, Spot } from "@/lib/types";
 
 const STORAGE_KEY = "jejunow:schedule";
@@ -65,19 +66,37 @@ export function MyPlanCard({
         href="/schedule"
         className="block rounded-card bg-card p-4 shadow-card transition-transform active:scale-[0.99]"
       >
-        <p className="text-sm font-semibold text-ink">{plan.date}</p>
-        <ul className="mt-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-ink">{formatKstDate(plan.date)}</p>
+          <span className="text-xs font-medium text-dim">{items.length}곳</span>
+        </div>
+        <ul className="mt-3 space-y-2.5">
           {items.slice(0, 4).map(({ slot, spot }) => {
             const c = congestionById.get(spot.spot_id);
             return (
-              <li key={`${slot.hour}-${spot.spot_id}`} className="flex items-center gap-2.5">
-                <span className="w-11 shrink-0 text-xs font-semibold text-dim">{slot.hour}시</span>
+              <li key={`${slot.hour}-${spot.spot_id}`} className="flex items-center gap-3">
+                <span className="w-9 shrink-0 text-xs font-semibold text-dim">{slot.hour}시</span>
+                {/* 미니 썸네일 — 텍스트 나열이던 카드에 사진 리듬 부여 */}
+                <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-line">
+                  {spot.image_url ? (
+                    <Image
+                      src={spot.image_url}
+                      alt=""
+                      fill
+                      sizes="40px"
+                      className="object-cover photo-warm"
+                      unoptimized={spot.image_url.endsWith(".bmp")}
+                    />
+                  ) : null}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
+                  {spot.name}
+                </span>
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: c ? LEVEL_COLOR[c.level] : "var(--color-line)" }}
                   aria-hidden
                 />
-                <span className="min-w-0 flex-1 truncate text-sm text-ink">{spot.name}</span>
               </li>
             );
           })}

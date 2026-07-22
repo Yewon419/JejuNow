@@ -10,7 +10,7 @@ export function FeatureCourseCard({ spot, congestion }: { spot: Spot; congestion
   return (
     <Link
       href={`/spots/${spot.spot_id}`}
-      className="relative block h-56 overflow-hidden rounded-card shadow-card transition-transform active:scale-[0.98]"
+      className="relative block h-64 overflow-hidden rounded-card shadow-card transition-transform active:scale-[0.98]"
     >
       {spot.image_url ? (
         <Image
@@ -25,7 +25,8 @@ export function FeatureCourseCard({ spot, congestion }: { spot: Spot; congestion
       ) : (
         <div className="h-full w-full bg-gradient-to-br from-primary to-cta" aria-hidden />
       )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" aria-hidden />
+      {/* 흰 건물·하늘 사진 위 흰 글씨 가독성: 하단 스크림을 진하게 + 텍스트 섀도 이중 방어 */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/5" aria-hidden />
       <div className="absolute inset-x-0 bottom-0 p-5">
         <span
           className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-white"
@@ -33,8 +34,10 @@ export function FeatureCourseCard({ spot, congestion }: { spot: Spot; congestion
         >
           지금 {LEVEL_LABEL[level] ?? "한적"} · 추천 코스
         </span>
-        <h3 className="mt-2 text-2xl font-bold text-white">{spot.name}</h3>
-        <p className="text-sm text-white/85">
+        <h3 className="mt-2 text-2xl font-bold text-white [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]">
+          {spot.name}
+        </h3>
+        <p className="text-sm text-white/90 [text-shadow:0_1px_6px_rgba(0,0,0,0.5)]">
           {spot.region} · {catLabel(spot.cat2)}
         </p>
         <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-bold text-ink">

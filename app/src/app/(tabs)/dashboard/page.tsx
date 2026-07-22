@@ -86,25 +86,27 @@ export default async function DashboardPage() {
               <Link
                 key={s.spot_id}
                 href={`/spots/${s.spot_id}`}
-                className="overflow-hidden rounded-card bg-card shadow-card transition-transform active:scale-[0.98]"
+                className="relative block h-36 overflow-hidden rounded-card shadow-card transition-transform active:scale-[0.98]"
               >
                 {/* CSS 배경이 아니라 next/image — 배경으로 쓰면 원본을 그대로 받는다 */}
-                <div className="relative h-24 w-full bg-line" aria-hidden>
-                  <Image
-                    src={s.image_url}
-                    alt=""
-                    fill
-                    sizes="(max-width: 640px) 50vw, 288px"
-                    className="object-cover photo-warm"
-                    unoptimized={s.image_url.endsWith(".bmp")}
-                  />
+                <Image
+                  src={s.image_url}
+                  alt=""
+                  fill
+                  sizes="(max-width: 640px) 50vw, 288px"
+                  className="object-cover photo-warm"
+                  unoptimized={s.image_url.endsWith(".bmp")}
+                />
+                <div
+                  className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/5"
+                  aria-hidden
+                />
+                <div className="absolute left-2.5 top-2.5">
+                  <LevelBadge level={c.level} />
                 </div>
-                <div className="p-3">
-                  <p className="truncate text-sm font-bold text-ink">{s.name}</p>
-                  <div className="mt-1.5">
-                    <LevelBadge level={c.level} />
-                  </div>
-                </div>
+                <p className="absolute inset-x-0 bottom-0 truncate p-3 text-sm font-bold text-white [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">
+                  {s.name}
+                </p>
               </Link>
             ))}
           </div>

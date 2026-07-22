@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { haversineKm } from "@/lib/alternatives";
+import { catLabel } from "@/lib/constants";
 import { FeatureCourseCard } from "./FeatureCourseCard";
-import { SpotCard } from "./SpotCard";
+import { LevelBadge } from "./LevelBadge";
 import type { Congestion, ScheduleSlot, Spot } from "@/lib/types";
 
 // 제주 밖(여행 전 데스크톱 등)의 현위치는 추천 기준으로 무의미 — bbox 밖이면 무시
@@ -85,7 +87,7 @@ export function QuietNearby({
   }, [spots, congestion, origin]);
 
   const feature = ranked[0];
-  const rest = ranked.slice(1, 7);
+  const rest = ranked.slice(1, 9);
 
   return (
     <>
@@ -111,10 +113,47 @@ export function QuietNearby({
           </Link>
         </div>
         {rest.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          /* 가로 스냅 캐러셀 — 세로 나열 대비 스크롤 절반·리듬 생성 (Airbnb식 photo-led row).
+             음수 마진으로 화면 끝까지 흘리고 패딩으로 첫 카드 정렬 유지 */
+          <div
+            className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            role="list"
+          >
             {rest.map(({ c, s }, i) => (
-              <div key={s.spot_id} className="animate-card-in" style={{ animationDelay: `${i * 60}ms` }}>
-                <SpotCard spot={s} congestion={c} />
+              <div
+                key={s.spot_id}
+                role="listitem"
+                className="animate-card-in snap-start"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <Link
+                  href={`/spots/${s.spot_id}`}
+                  className="relative block h-56 w-40 overflow-hidden rounded-card shadow-card transition-transform active:scale-[0.97]"
+                >
+                  <Image
+                    src={s.image_url ?? ""}
+                    alt={s.name}
+                    fill
+                    sizes="160px"
+                    className="object-cover photo-warm"
+                    unoptimized={Boolean(s.image_url?.endsWith(".bmp"))}
+                  />
+                  <div
+                    className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/5"
+                    aria-hidden
+                  />
+                  <div className="absolute left-2.5 top-2.5">
+                    <LevelBadge level={c.level} imputed={c.is_imputed} />
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 p-3">
+                    <p className="text-sm font-bold leading-snug text-white [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">
+                      {s.name}
+                    </p>
+                    <p className="mt-0.5 truncate text-[11px] text-white/85">
+                      {s.region} · {catLabel(s.cat2)}
+                    </p>
+                  </div>
+                </Link>
               </div>
             ))}
           </div>
