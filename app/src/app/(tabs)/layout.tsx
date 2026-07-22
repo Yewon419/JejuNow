@@ -1,4 +1,5 @@
 import { BottomNav } from "@/components/BottomNav";
+import { SwipeNav } from "@/components/SwipeNav";
 
 export default function TabsLayout({
   children,
@@ -7,7 +8,7 @@ export default function TabsLayout({
 }>) {
   return (
     <div className="mx-auto min-h-dvh max-w-xl pb-[calc(5rem+env(safe-area-inset-bottom,0px))]">
-      {children}
+      <SwipeNav>{children}</SwipeNav>
       <BottomNav />
     </div>
   );
