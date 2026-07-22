@@ -2,7 +2,7 @@
 
 import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { type RouteData, fetchRoute, routeCoord } from "@/lib/api";
+import { type RouteData, fetchRoute, formatDuration, routeCoord } from "@/lib/api";
 import { haversineKm } from "@/lib/alternatives";
 import type { Spot } from "@/lib/types";
 
@@ -191,7 +191,7 @@ export function RouteView({
             <p className="text-sm text-ink">
               <span className="font-bold">{(route.distance_m / 1000).toFixed(1)}km</span>
               <span className="text-dim"> · 약 </span>
-              <span className="font-bold">{Math.max(1, Math.round(route.duration_s / 60))}분</span>
+              <span className="font-bold">{formatDuration(route.duration_s)}</span>
               <span className="text-dim"> (자동차)</span>
             </p>
           ) : status === "failed" ? (

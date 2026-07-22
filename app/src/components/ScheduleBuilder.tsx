@@ -5,7 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import { type Alternative, findAlternatives } from "@/lib/alternatives";
 import { SCHEDULE_COACH } from "@/lib/coach";
 import { tapLight, tapMedium } from "@/lib/haptics";
-import { type RouteData, fetchAlternativesLive, fetchRoute, simulateSchedule } from "@/lib/api";
+import {
+  type RouteData,
+  fetchAlternativesLive,
+  fetchRoute,
+  formatDuration,
+  sameLocation,
+  simulateSchedule,
+} from "@/lib/api";
 import { CoachMark } from "./CoachMark";
 import { RouteView } from "./RouteView";
 import {
@@ -122,7 +129,8 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
     for (let i = 1; i < slots.length; i += 1) {
       const a = spotById.get(slots[i - 1].spotId);
       const b = spotById.get(slots[i].spotId);
-      if (a && b) pairs.push([a, b]);
+      // 같은 지점(같은 스팟·같은 주차장)은 경로가 0km라 조회·표시 생략
+      if (a && b && !sameLocation(a, b)) pairs.push([a, b]);
     }
     if (pairs.length === 0) return;
     Promise.all(
@@ -207,10 +215,13 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
             : [];
           // 직전 슬롯 → 현재 슬롯 이동 경로 (인앱 지도, 실패 시 카카오맵 링크 폴백)
           const prevSpot = idx > 0 ? spotById.get(slots[idx - 1].spotId) : undefined;
-          const meta = prevSpot ? routeMeta.get(`${prevSpot.spot_id}:${spot.spot_id}`) : undefined;
+          // 직전 슬롯과 같은 지점이면 경로 표시 자체를 없앤다(0km 무의미)
+          const showRoute = prevSpot ? !sameLocation(prevSpot, spot) : false;
+          const meta =
+            showRoute && prevSpot ? routeMeta.get(`${prevSpot.spot_id}:${spot.spot_id}`) : undefined;
           return (
             <li key={slot.hour} className="relative">
-              {prevSpot ? (
+              {showRoute && prevSpot ? (
                 <button
                   type="button"
                   onClick={() => setRouteView({ from: prevSpot, to: spot })}
@@ -223,8 +234,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                   경로 보기
                   {meta ? (
                     <span className="font-medium text-dim">
-                      · {(meta.distance_m / 1000).toFixed(1)}km · 약{" "}
-                      {Math.max(1, Math.round(meta.duration_s / 60))}분
+                      · {(meta.distance_m / 1000).toFixed(1)}km · 약 {formatDuration(meta.duration_s)}
                     </span>
                   ) : null}
                 </button>

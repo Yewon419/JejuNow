@@ -3,7 +3,7 @@
 // Supabase precompute 경로로 폴백한다 (데모 생존성 우선).
 "use client";
 
-import type { Alternative } from "./alternatives";
+import { type Alternative, haversineKm } from "./alternatives";
 import type { Congestion, ScheduleSlot, Spot } from "./types";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
@@ -95,6 +95,28 @@ export type RouteResult =
  *  봉우리·해안 등 원 좌표가 도로 밖인 스팟의 카카오내비 거부를 피한다. */
 export function routeCoord(s: Spot): { lat: number; lng: number } {
   return { lat: s.route_lat ?? s.lat, lng: s.route_lng ?? s.lng };
+}
+
+// 이 거리 안이면 두 스팟을 같은 지점으로 보고 경로 표시를 생략한다.
+// 같은 spot_id거나, 서로 다른 스팟이어도 route 좌표(주차장)가 같게 매핑된 경우(예: 인접
+// 두 명소가 같은 주차장) 경로가 0km라 무의미하다.
+const SAME_LOCATION_KM = 0.05; // 50m
+
+/** 두 스팟이 경로상 같은 지점인가(경로 표시 생략 판정). */
+export function sameLocation(a: Spot, b: Spot): boolean {
+  if (a.spot_id === b.spot_id) return true;
+  const pa = routeCoord(a);
+  const pb = routeCoord(b);
+  return haversineKm(pa.lat, pa.lng, pb.lat, pb.lng) < SAME_LOCATION_KM;
+}
+
+/** 소요 시간 사람이 읽는 표기 — 60분 이상은 "N시간 M분"으로. "약" 접두는 사용처가 붙인다. */
+export function formatDuration(sec: number): string {
+  const min = Math.max(1, Math.round(sec / 60));
+  if (min < 60) return `${min}분`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h}시간` : `${h}시간 ${m}분`;
 }
 
 // 경로는 (출발, 도착)당 1회만 카카오 호출 — 칩 시간 표시와 RouteView 모달이 결과 공유
