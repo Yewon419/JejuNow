@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { type Alternative, findAlternatives } from "@/lib/alternatives";
+import { type Alternative, findAlternatives, haversineKm } from "@/lib/alternatives";
 import { SCHEDULE_COACH } from "@/lib/coach";
 import { tapLight, tapMedium } from "@/lib/haptics";
 import {
@@ -170,11 +170,31 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
     };
   }, [slots, spotById]);
 
+  // 추가 위치 바로 위 슬롯의 스팟 — 선택 시트를 이 스팟과 가까운 순으로 정렬(동선 이어붙이기)
+  const pickerRefSpot = useMemo(() => {
+    if (!picker.open) return undefined;
+    const targetHour = picker.forHour ?? nextFreeHour(slots);
+    const prev = slots
+      .filter((s) => s.hour < targetHour)
+      .sort((a, b) => b.hour - a.hour)[0];
+    return prev ? spotById.get(prev.spotId) : undefined;
+  }, [picker, slots, spotById]);
+
   const filteredSpots = useMemo(() => {
     const q = query.trim();
-    const pool = q ? spots.filter((s) => s.name.includes(q)) : spots.filter((s) => s.image_url);
-    return pool.slice(0, 12);
-  }, [spots, query]);
+    const scheduled = new Set(slots.map((s) => s.spotId));
+    const pool = (q ? spots.filter((s) => s.name.includes(q)) : spots.filter((s) => s.image_url))
+      // 이미 일정에 담긴 곳은 제외 — 근처 순 정렬에서 자기 자신이 0.0km 1위로 뜨는 것 방지
+      .filter((s) => !scheduled.has(s.spot_id));
+    const ref = pickerRefSpot;
+    if (!ref) return pool.slice(0, 12);
+    return [...pool]
+      .sort(
+        (a, b) =>
+          haversineKm(ref.lat, ref.lng, a.lat, a.lng) - haversineKm(ref.lat, ref.lng, b.lat, b.lng),
+      )
+      .slice(0, 12);
+  }, [spots, query, slots, pickerRefSpot]);
 
   function addSlot(spotId: number) {
     tapMedium();
@@ -449,7 +469,14 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
             style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
           >
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-ink">스팟 선택</h2>
+              <h2 className="text-lg font-bold text-ink">
+                스팟 선택
+                {pickerRefSpot ? (
+                  <span className="ml-2 text-xs font-medium text-dim">
+                    {spotDisplayName(pickerRefSpot.name)} 근처 순
+                  </span>
+                ) : null}
+              </h2>
               <button
                 type="button"
                 onClick={() => setPicker({ open: false, forHour: null })}
@@ -480,6 +507,9 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                     <span className="block text-sm font-semibold text-ink">{s.name}</span>
                     <span className="text-xs text-dim">
                       {s.region} · {catLabel(s.cat2)}
+                      {pickerRefSpot
+                        ? ` · ${(Math.round(haversineKm(pickerRefSpot.lat, pickerRefSpot.lng, s.lat, s.lng) * 10) / 10).toFixed(1)}km`
+                        : ""}
                     </span>
                   </button>
                 </li>
