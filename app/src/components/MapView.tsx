@@ -78,6 +78,9 @@ export function MapView({
   const [locMsg, setLocMsg] = useState<string | null>(null);
   const locMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const myLocRef = useRef<KakaoCustomOverlay | null>(null);
+  const zoomTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 현재 지도에 붙어 있는 오버레이 — 보이는 마커만 부착해 팬·줌 재배치 비용을 줄인다
+  const attachedRef = useRef(new Set<number>());
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<KakaoMapObj | null>(null);
@@ -128,8 +131,13 @@ export function MapView({
       mapRef.current = map;
       // 지도 배경 탭 = 상세 시트 닫기 (네이버 지도 관례)
       kakao.maps.event.addListener(map, "click", () => setSelected(null));
-      // 줌 레벨 추적 — 줌아웃 상태의 마커 솎아내기 기준
-      kakao.maps.event.addListener(map, "zoom_changed", () => setZoomLevel(map.getLevel()));
+      // 줌 레벨 추적 — 핀치 중엔 레벨마다 발화해 리렌더 폭주하므로 멎은 뒤 1회만 반영
+      kakao.maps.event.addListener(map, "zoom_changed", () => {
+        if (zoomTimer.current) clearTimeout(zoomTimer.current);
+        zoomTimer.current = setTimeout(() => setZoomLevel(map.getLevel()), 120);
+      });
+      // 오버레이는 만들어만 두고 지도엔 붙이지 않는다 — 802개 전부 붙이면 팬·줌마다
+      // 카카오가 전 노드를 재배치해 버벅인다. 보이는 마커만 붙이는 동기화 이펙트가 담당
       const nodes = new Map<number, HTMLDivElement>();
       for (const spot of spots) {
         const node = document.createElement("div");
@@ -139,7 +147,6 @@ export function MapView({
           yAnchor: 0.5,
           clickable: true,
         });
-        overlay.setMap(map);
         overlaysRef.current.set(spot.spot_id, overlay);
         nodes.set(spot.spot_id, node);
       }
@@ -208,6 +215,37 @@ export function MapView({
     return new Set([...best.values()].map((v) => v.id));
   }, [spots, congestion, zoomLevel, isFiltered]);
 
+  // 이번 렌더에 실제로 보이는 마커 집합 — 포털 렌더와 오버레이 부착이 공유
+  const visibleMarkers = useMemo(() => {
+    const out = new Set<number>();
+    for (const spot of spots) {
+      const c = congestion.get(spot.spot_id);
+      if (isFiltered(c)) continue;
+      if (visibleIds !== null && !visibleIds.has(spot.spot_id)) continue;
+      out.add(spot.spot_id);
+    }
+    if (selected) out.add(selected.spot_id);
+    return out;
+  }, [spots, congestion, isFiltered, visibleIds, selected]);
+
+  // 보이는 마커만 지도에 부착 — 카카오는 붙은 오버레이 전부를 팬·줌마다 재배치하므로
+  // 802개를 다 붙여두면 핀치가 버벅인다 (실기기 피드백)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (status !== "ready" || !map) return;
+    for (const [id, overlay] of overlaysRef.current) {
+      const show = visibleMarkers.has(id);
+      const attached = attachedRef.current.has(id);
+      if (show && !attached) {
+        overlay.setMap(map);
+        attachedRef.current.add(id);
+      } else if (!show && attached) {
+        overlay.setMap(null);
+        attachedRef.current.delete(id);
+      }
+    }
+  }, [visibleMarkers, status]);
+
   // 마커는 Kakao CustomOverlay 노드에 포털로 렌더 — 혼잡도 변경 시 색만 리렌더
   const markerPortals =
     overlayNodes &&
@@ -216,8 +254,7 @@ export function MapView({
       if (!node) return null;
       const c = congestion.get(spot.spot_id);
       const isSelected = selected?.spot_id === spot.spot_id;
-      const hidden =
-        !isSelected && (isFiltered(c) || (visibleIds !== null && !visibleIds.has(spot.spot_id)));
+      const hidden = !visibleMarkers.has(spot.spot_id);
       const color = c ? (LEVEL_COLOR[c.level] ?? "#475569") : "#475569";
       const size = (c && c.level >= 3 ? 18 : 14) + (isSelected ? 8 : 0);
       return createPortal(
