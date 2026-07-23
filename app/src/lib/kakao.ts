@@ -3,11 +3,24 @@ export interface KakaoLatLng {
   readonly __brand?: "KakaoLatLng";
 }
 
+export interface KakaoPoint {
+  readonly __brand?: "KakaoPoint";
+}
+
+export interface KakaoProjection {
+  coordsFromContainerPoint(point: KakaoPoint): KakaoLatLng;
+}
+
 export interface KakaoMapObj {
   setCenter(latlng: KakaoLatLng): void;
-  setLevel(level: number): void;
+  setLevel(
+    level: number,
+    options?: { anchor?: KakaoLatLng; animate?: boolean | { duration: number } },
+  ): void;
   getLevel(): number;
   setBounds(bounds: KakaoLatLngBounds): void;
+  setZoomable(zoomable: boolean): void;
+  getProjection(): KakaoProjection;
 }
 
 export interface KakaoLatLngBounds {
@@ -31,6 +44,7 @@ export interface KakaoStaticMap {
 export interface KakaoMapsApi {
   load(callback: () => void): void;
   LatLng: new (lat: number, lng: number) => KakaoLatLng;
+  Point: new (x: number, y: number) => KakaoPoint;
   Map: new (container: HTMLElement, options: { center: KakaoLatLng; level: number }) => KakaoMapObj;
   StaticMap: new (
     container: HTMLElement,

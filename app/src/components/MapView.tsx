@@ -150,6 +150,97 @@ export function MapView({
         overlaysRef.current.set(spot.spot_id, overlay);
         nodes.set(spot.spot_id, node);
       }
+      // 핀치 연속 줌 — SDK는 정수 레벨 래스터라 핀치가 레벨 단위로 뚝뚝 끊긴다(옵션 없음,
+      // 문서 확인). 터치 기기에선 SDK 줌을 끄고: 핀치 동안 컨테이너를 CSS scale로 연속
+      // 확대하다가 손을 떼면 가장 가까운 레벨로 스냅(앵커 = 핀치 중심). 더블탭 줌도 재구현.
+      if ("ontouchstart" in window) {
+        map.setZoomable(false);
+        let pinch: {
+          dist0: number;
+          level0: number;
+          cx: number;
+          cy: number;
+          scale: number;
+        } | null = null;
+        let lastTap = { t: 0, x: 0, y: 0 };
+        const touchDist = (a: Touch, b: Touch) =>
+          Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+        const clampLevel = (v: number) => Math.min(14, Math.max(1, v));
+        const anchorAt = (x: number, y: number) =>
+          map.getProjection().coordsFromContainerPoint(new kakao.maps.Point(x, y));
+
+        container.addEventListener(
+          "touchstart",
+          (e) => {
+            if (e.touches.length !== 2) return;
+            e.stopPropagation(); // 카카오가 두 손가락을 팬으로 오해하지 않게
+            const r = container.getBoundingClientRect();
+            const [a, b] = [e.touches[0], e.touches[1]];
+            pinch = {
+              dist0: Math.max(1, touchDist(a, b)),
+              level0: map.getLevel(),
+              cx: (a.clientX + b.clientX) / 2 - r.left,
+              cy: (a.clientY + b.clientY) / 2 - r.top,
+              scale: 1,
+            };
+            container.style.transition = "none";
+            container.style.transformOrigin = `${pinch.cx}px ${pinch.cy}px`;
+          },
+          { capture: true, passive: false },
+        );
+        container.addEventListener(
+          "touchmove",
+          (e) => {
+            if (!pinch || e.touches.length !== 2) return;
+            e.preventDefault(); // 페이지 확대 방지
+            e.stopPropagation();
+            const s = Math.min(
+              4,
+              Math.max(0.25, touchDist(e.touches[0], e.touches[1]) / pinch.dist0),
+            );
+            pinch.scale = s;
+            container.style.transform = `scale(${s})`;
+          },
+          { capture: true, passive: false },
+        );
+        const endPinch = (e: TouchEvent) => {
+          if (!pinch || e.touches.length >= 2) return false;
+          e.stopPropagation();
+          const { level0, scale, cx, cy } = pinch;
+          pinch = null;
+          container.style.transform = "";
+          container.style.transformOrigin = "";
+          const delta = Math.round(Math.log2(scale));
+          if (delta !== 0) map.setLevel(clampLevel(level0 - delta), { anchor: anchorAt(cx, cy) });
+          return true;
+        };
+        container.addEventListener(
+          "touchend",
+          (e) => {
+            if (endPinch(e)) return;
+            // 더블탭 줌인 (setZoomable(false)로 꺼진 기본 동작 재구현)
+            if (e.changedTouches.length !== 1 || e.touches.length !== 0) return;
+            const t = e.changedTouches[0];
+            if (
+              e.timeStamp - lastTap.t < 300 &&
+              Math.hypot(t.clientX - lastTap.x, t.clientY - lastTap.y) < 30
+            ) {
+              e.preventDefault();
+              const r = container.getBoundingClientRect();
+              map.setLevel(clampLevel(map.getLevel() - 1), {
+                anchor: anchorAt(t.clientX - r.left, t.clientY - r.top),
+                animate: true,
+              });
+              lastTap = { t: 0, x: 0, y: 0 };
+            } else {
+              lastTap = { t: e.timeStamp, x: t.clientX, y: t.clientY };
+            }
+          },
+          { capture: true, passive: false },
+        );
+        container.addEventListener("touchcancel", endPinch, { capture: true });
+      }
+
       setOverlayNodes(nodes);
       setStatus("ready");
       const focus = spots.find((s) => s.spot_id === focusId);
