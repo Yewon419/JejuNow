@@ -31,6 +31,9 @@
 
   /* 아래 모션들 모두 reduced-motion 미디어쿼리(하단)가 전역 무효화 */
 
+  /* 소개 리드문 세리프 (next/font가 --font-serif-kr 주입) */
+  --font-serif: var(--font-serif-kr), "Noto Serif KR", ui-serif, Georgia, serif;
+
   /* 지도 상세 시트 슬라이드업 */
   --animate-sheet-up: sheet-up 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   @keyframes sheet-up {

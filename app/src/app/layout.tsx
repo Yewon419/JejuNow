@@ -1,6 +1,17 @@
 import type { Metadata, Viewport } from "next";
+import { Noto_Serif_KR } from "next/font/google";
 import { StaleReload } from "@/components/StaleReload";
 import "./globals.css";
+
+// 상세 소개 리드문용 세리프(매거진 문법). next/font 셀프호스팅이라 런타임 외부 호스트가
+// 늘지 않는다(App Privacy 실측 호스트 목록 보존). 리드문 전용이라 preload는 끈다.
+const serifKr = Noto_Serif_KR({
+  weight: ["600"],
+  subsets: ["latin"],
+  variable: "--font-serif-kr",
+  display: "swap",
+  preload: false,
+});
 
 export const metadata: Metadata = {
   title: "JejuNow — 한적한 제주를 찾아서",
@@ -23,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="h-full antialiased">
+    <html lang="ko" className={`h-full antialiased ${serifKr.variable}`}>
       {/* HTML 파싱 시점에 바로 시작하도록 head로 올린다 (React 19가 호이스팅).
           stylesheet는 precedence가 있어야 React가 head로 관리 — 없으면 hydration 경고 */}
       <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="" />
