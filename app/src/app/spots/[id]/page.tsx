@@ -118,7 +118,7 @@ export default async function SpotDetailPage({
         </header>
       </div>
 
-      <div className="relative -mt-6 space-y-8 rounded-t-3xl bg-bg px-5 pt-8 lg:mt-0 lg:rounded-none lg:px-0 lg:pt-0">
+      <div className="relative -mt-6 min-w-0 space-y-8 rounded-t-3xl bg-bg px-5 pt-8 lg:mt-0 lg:rounded-none lg:px-0 lg:pt-0">
         <SpotInfoCard
           hours={spot.opening_hours}
           tel={spot.tel}

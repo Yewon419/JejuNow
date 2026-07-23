@@ -124,9 +124,11 @@ export default async function DashboardPage() {
       </header>
       </div>
 
-      {/* 아이패드 가로(lg+)는 2단: 좌=내 여행·붐빔, 우=추천·캐러셀 (세로·폰은 1단 그대로) */}
-      <div className="mt-7 grid gap-7 pb-2 lg:grid-cols-2 lg:items-start lg:gap-8">
-      <div className="space-y-7">
+      {/* 아이패드 가로(lg+)는 2단: 좌=내 여행·붐빔, 우=추천·캐러셀 (세로·폰은 1단 그대로).
+          ⚠ min-w-0 필수: WebKit은 그리드 자식 안의 가로 스크롤러(캐러셀) 콘텐츠 폭을
+          트랙 최소폭으로 잡아 프레임 밖으로 밀어낸다 (실기기 재현, Chromium은 무증상) */}
+      <div className="mt-7 grid grid-cols-1 gap-7 pb-2 lg:grid-cols-2 lg:items-start lg:gap-8">
+      <div className="min-w-0 space-y-7">
       {/* 담아둔 일정이 있으면 최상단에 — 없으면 스스로 아무것도 그리지 않는다 */}
       <MyPlanCard spots={spots} congestion={congestion} />
 
@@ -168,7 +170,7 @@ export default async function DashboardPage() {
       ) : null}
       </div>
 
-      <div className="space-y-7">
+      <div className="min-w-0 space-y-7">
         <QuietNearby spots={spots} congestion={congestion} />
       </div>
       </div>

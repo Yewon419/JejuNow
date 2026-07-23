@@ -111,7 +111,7 @@ export function QuietNearby({
           /* 가로 스냅 캐러셀 — 세로 나열 대비 스크롤 절반·리듬 생성 (Airbnb식 photo-led row).
              음수 마진으로 화면 끝까지 흘리고 패딩으로 첫 카드 정렬 유지 */
           <div
-            className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:mx-0 lg:px-0 [&::-webkit-scrollbar]:hidden"
+            className="-mx-5 flex max-w-[calc(100%+2.5rem)] snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:mx-0 lg:max-w-full lg:px-0 [&::-webkit-scrollbar]:hidden"
             role="list"
           >
             {rest.map(({ c, s }, i) => (
