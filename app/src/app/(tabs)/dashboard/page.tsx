@@ -65,7 +65,7 @@ export default async function DashboardPage() {
   const glyphPath = dayPart === "night" || dayPart === "dawn" ? MOON_PATH : SUN_PATH;
 
   return (
-    <main className="space-y-7 px-5">
+    <main className="px-5">
       {/* 서버 컴포넌트에서 클라이언트 컴포넌트를 그대로 렌더 — 별도 래퍼 불필요 */}
       <CoachMark id="dashboard" steps={DASHBOARD_COACH} />
       {/* 시간대 그라데이션 히어로 밴드 — 상태바 영역까지 차오르고 bg로 자연스럽게 사라진다 */}
@@ -124,6 +124,9 @@ export default async function DashboardPage() {
       </header>
       </div>
 
+      {/* 아이패드 가로(lg+)는 2단: 좌=내 여행·붐빔, 우=추천·캐러셀 (세로·폰은 1단 그대로) */}
+      <div className="mt-7 grid gap-7 pb-2 lg:grid-cols-2 lg:items-start lg:gap-8">
+      <div className="space-y-7">
       {/* 담아둔 일정이 있으면 최상단에 — 없으면 스스로 아무것도 그리지 않는다 */}
       <MyPlanCard spots={spots} congestion={congestion} />
 
@@ -163,8 +166,12 @@ export default async function DashboardPage() {
           </div>
         </section>
       ) : null}
+      </div>
 
-      <QuietNearby spots={spots} congestion={congestion} />
+      <div className="space-y-7">
+        <QuietNearby spots={spots} congestion={congestion} />
+      </div>
+      </div>
     </main>
   );
 }

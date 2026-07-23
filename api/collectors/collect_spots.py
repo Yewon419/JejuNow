@@ -84,6 +84,7 @@ def _str_field(item: dict[str, object], key: str) -> str | None:
 
 _BR_RE = re.compile(r"<br\s*/?>", re.IGNORECASE)
 _TAG_RE = re.compile(r"<[^>]+>")
+_HREF_RE = re.compile(r"href=[\"']([^\"']+)[\"']", re.IGNORECASE)
 
 
 def _clean_text(raw: str | None) -> str | None:
@@ -94,6 +95,18 @@ def _clean_text(raw: str | None) -> str | None:
     text = _TAG_RE.sub("", text)
     text = html.unescape(text).strip()
     return text or None
+
+
+def _clean_homepage(raw: str | None) -> str | None:
+    """TourAPI homepage는 앵커 HTML(<a href="...">...)이거나 순수 URL — href만 추출."""
+    if raw is None:
+        return None
+    match = _HREF_RE.search(raw)
+    url = match.group(1) if match else _TAG_RE.sub("", raw).strip()
+    url = url.strip()
+    if not url.startswith(("http://", "https://")):
+        return None
+    return url
 
 
 def _base_params(service_key: str) -> dict[str, str]:
@@ -232,8 +245,8 @@ def fetch_opening_hours(
 
 def fetch_overview_tel(
     session: requests.Session, service_key: str, content_id: str, name: str
-) -> tuple[str | None, str | None]:
-    """detailCommon2의 (overview, tel) — 원천에 없으면 (None, None)."""
+) -> tuple[str | None, str | None, str | None]:
+    """detailCommon2의 (overview, tel, homepage) — 원천에 없으면 None."""
     params = _base_params(service_key) | {"contentId": content_id}
     log_params = {k: v for k, v in params.items() if k != "serviceKey"}
     try:
@@ -243,11 +256,15 @@ def fetch_overview_tel(
         if "quota" in str(exc).lower() or "status=429" in str(exc):
             raise QuotaExceededError(str(exc)) from exc
         logger.warning("소개 조회 실패(계속 진행): %s — %s", name, exc)
-        return None, None
+        return None, None, None
     if not items:
-        return None, None
+        return None, None, None
     item = as_dict(items[0], "common item")
-    return _clean_text(_str_field(item, "overview")), _str_field(item, "tel")
+    return (
+        _clean_text(_str_field(item, "overview")),
+        _str_field(item, "tel"),
+        _clean_homepage(_str_field(item, "homepage")),
+    )
 
 
 def fetch_first_image(
@@ -293,14 +310,16 @@ def main() -> None:
     existing_images: dict[str, str] = {}
     existing_overview: dict[str, str] = {}
     existing_tel: dict[str, str] = {}
+    existing_homepage: dict[str, str] = {}
     for row in db.select_all(
-        "spots", {"select": "content_id,opening_hours,image_url,overview,tel"}
+        "spots", {"select": "content_id,opening_hours,image_url,overview,tel,homepage"}
     ):
         cid = row.get("content_id")
         if not isinstance(cid, str):
             continue
         oh, img = row.get("opening_hours"), row.get("image_url")
         ov, tel = row.get("overview"), row.get("tel")
+        hp = row.get("homepage")
         if isinstance(oh, str):
             existing_hours[cid] = oh
         if isinstance(img, str):
@@ -309,6 +328,8 @@ def main() -> None:
             existing_overview[cid] = ov
         if isinstance(tel, str):
             existing_tel[cid] = tel
+        if isinstance(hp, str):
+            existing_homepage[cid] = hp
 
     logger.info("운영시간 보강 시작 (%d건, detailIntro2)", len(spots))
     hours: dict[str, str | None] = {}
@@ -353,11 +374,12 @@ def main() -> None:
     logger.info("소개 보강 시작 (%d건, detailCommon2)", len(need_common))
     overviews: dict[str, str] = {}
     tels: dict[str, str] = {}
+    homepages: dict[str, str] = {}
     for i, spot in enumerate(need_common, 1):
         if quota_hit:
             break
         try:
-            ov, tel = fetch_overview_tel(
+            ov, tel, homepage = fetch_overview_tel(
                 session, settings.data_go_kr_key, spot.content_id, spot.name
             )
         except QuotaExceededError as exc:
@@ -368,6 +390,8 @@ def main() -> None:
             overviews[spot.content_id] = ov
         if tel:
             tels[spot.content_id] = tel
+        if homepage:
+            homepages[spot.content_id] = homepage
         time.sleep(DETAIL_DELAY_SEC)
     logger.info("소개 보강 결과: %d/%d건 확보", len(overviews), len(need_common))
 
@@ -387,6 +411,7 @@ def main() -> None:
             or existing_images.get(s.content_id),
             "overview": overviews.get(s.content_id) or existing_overview.get(s.content_id),
             "tel": tels.get(s.content_id) or existing_tel.get(s.content_id),
+            "homepage": homepages.get(s.content_id) or existing_homepage.get(s.content_id),
             "is_outdoor": _is_outdoor(s.cat2),
             "region": s.region,
         }

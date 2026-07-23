@@ -29,6 +29,13 @@ const ICON = {
       />
     </>
   ),
+  globe: (
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m-16.432 0A8.959 8.959 0 0 1 3 12c0-.778.099-1.533.284-2.253"
+    />
+  ),
 } as const;
 
 function InfoRow({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
@@ -49,15 +56,17 @@ function InfoRow({ icon, children }: { icon: React.ReactNode; children: React.Re
   );
 }
 
-/** 운영·전화·주소를 아이콘 행으로 (네이버 플레이스·트리플 문법). 주소는 탭하면 복사. */
+/** 운영·전화·주소·홈페이지를 아이콘 행으로 (네이버 플레이스·트리플 문법). 주소는 탭하면 복사. */
 export function SpotInfoCard({
   hours,
   tel,
   addr,
+  homepage,
 }: {
   hours: string | null;
   tel: string | null;
   addr: string | null;
+  homepage: string | null;
 }) {
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -68,7 +77,7 @@ export function SpotInfoCard({
     [],
   );
 
-  if (!hours && !tel && !addr) return null;
+  if (!hours && !tel && !addr && !homepage) return null;
 
   const copyAddr = async () => {
     if (!addr) return;
@@ -95,6 +104,19 @@ export function SpotInfoCard({
           ) : (
             <span>{tel}</span>
           )}
+        </InfoRow>
+      ) : null}
+      {homepage ? (
+        <InfoRow icon={ICON.globe}>
+          {/* 예매가 필요한 곳은 공식 홈페이지가 예매 창구 — 외부 링크로 연결 */}
+          <a
+            href={homepage}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline underline-offset-2"
+          >
+            홈페이지 · 예매 안내
+          </a>
         </InfoRow>
       ) : null}
       {addr ? (

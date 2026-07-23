@@ -44,12 +44,14 @@ def main() -> None:
     patches: list[dict[str, object]] = []
     for i, (cid, name) in enumerate(targets, 1):
         try:
-            ov, tel = fetch_overview_tel(session, settings.data_go_kr_key, cid, name)
+            ov, tel, homepage = fetch_overview_tel(session, settings.data_go_kr_key, cid, name)
         except QuotaExceededError as exc:
             logger.warning("쿼터 소진 — 백필 중단(%d/%d): %s", i, len(targets), exc)
             break
-        if ov or tel:
-            patches.append({"content_id": cid, "overview": ov, "tel": tel})
+        if ov or tel or homepage:
+            patches.append(
+                {"content_id": cid, "overview": ov, "tel": tel, "homepage": homepage}
+            )
         if i % 100 == 0:
             logger.info("백필 %d/%d (확보 %d)", i, len(targets), len(patches))
         time.sleep(DETAIL_DELAY_SEC)

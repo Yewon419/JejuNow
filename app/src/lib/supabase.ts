@@ -56,7 +56,7 @@ export async function fetchSpotDay(spotId: number, date: string): Promise<(Conge
 
 export async function fetchSpotById(spotId: number): Promise<SpotDetail | null> {
   const rows = await rest<SpotDetail[]>(
-    `spots?select=spot_id,name,cat1,cat2,lat,lng,route_lat,route_lng,addr,opening_hours,image_url,is_outdoor,region,overview,tel&spot_id=eq.${spotId}`,
+    `spots?select=spot_id,name,cat1,cat2,lat,lng,route_lat,route_lng,addr,opening_hours,image_url,is_outdoor,region,overview,tel,homepage&spot_id=eq.${spotId}`,
     3600,
   );
   return rows[0] ? normalizeSpot(rows[0]) : null;

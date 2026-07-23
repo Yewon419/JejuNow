@@ -16,10 +16,11 @@ export type Spot = {
   region: string;
 };
 
-/** 상세 페이지 전용 — 목록 조회는 페이로드 절약을 위해 overview·tel을 select하지 않는다 */
+/** 상세 페이지 전용 — 목록 조회는 페이로드 절약을 위해 overview·tel·homepage를 select하지 않는다 */
 export type SpotDetail = Spot & {
   overview: string | null;
   tel: string | null;
+  homepage: string | null; // 공식 홈페이지(예매 안내 포함) — TourAPI 원천
 };
 
 export type Congestion = {
