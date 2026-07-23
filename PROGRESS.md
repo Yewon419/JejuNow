@@ -315,6 +315,14 @@ iOS CI 함정 3건 (전부 실패 후 수정):
   상세 정보 카드에 「홈페이지 · 예매 안내」 외부 링크 행(globe 아이콘)
 - 게이트: tsc·eslint·ruff·mypy 전부 0
 
+**아이패드 실기기 가로 넘침 수정 (2026-07-23, 커밋 24c0c25):**
+- 실기기(WKWebView) 세로·가로 모두 콘텐츠가 프레임 오른쪽으로 넘침 — Chromium
+  Playwright는 무증상이라 통과했던 것. **Playwright WebKit 엔진으로 재현**(세로
+  overflowX 652px): WebKit은 그리드 자식 안 가로 스크롤러(캐러셀) 콘텐츠 폭을
+  트랙 최소폭에 반영한다. min-w-0·grid-cols-1 명시·캐러셀 max-w 캡으로 해소
+- ⚠ **교훈: iOS 웹뷰 렌더링 검증은 Chromium만으론 불충분 — Playwright webkit
+  엔진을 함께 돌릴 것** (`npx playwright install webkit`)
+
 **심사 준비 항목 (2026-07-20):**
 - ✅ 연령 등급 **4+** (7단계 설문 전부 응답, 172개국 적용). 「제한되지 않은 웹 액세스」는
   **아니요** — 웹뷰지만 주소창·자유 브라우징 UI가 없어 임의 웹페이지 탐색이 불가.
