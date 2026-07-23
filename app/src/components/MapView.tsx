@@ -25,8 +25,37 @@ import { CoachMark } from "./CoachMark";
 import { LevelBadge, PressureBar } from "./LevelBadge";
 
 const JEJU_CENTER = { lat: 33.37, lng: 126.53 };
+// 제주 밖 현위치는 이동 대상이 아니다 (QuietNearby와 동일 기준)
+const JEJU_BBOX = { minLat: 33.0, maxLat: 33.7, minLng: 126.0, maxLng: 127.1 };
+const DEFAULT_LEVEL = 10;
 
 type MapStatus = "loading" | "ready" | "failed";
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={() => {
+        tapLight();
+        onClick();
+      }}
+      className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-semibold shadow-card transition-colors ${
+        active ? "bg-ink text-white" : "bg-surface/95 text-ink"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
 
 export function MapView({
   spots,
@@ -43,6 +72,12 @@ export function MapView({
   const [status, setStatus] = useState<MapStatus>("loading");
   const [selected, setSelected] = useState<Spot | null>(null);
   const [showImputed, setShowImputed] = useState(false);
+  const [calmOnly, setCalmOnly] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(DEFAULT_LEVEL);
+  // 현위치 안내 토스트 (alert는 웹뷰를 얼리므로 금지)
+  const [locMsg, setLocMsg] = useState<string | null>(null);
+  const locMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const myLocRef = useRef<KakaoCustomOverlay | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<KakaoMapObj | null>(null);
@@ -93,6 +128,8 @@ export function MapView({
       mapRef.current = map;
       // 지도 배경 탭 = 상세 시트 닫기 (네이버 지도 관례)
       kakao.maps.event.addListener(map, "click", () => setSelected(null));
+      // 줌 레벨 추적 — 줌아웃 상태의 마커 솎아내기 기준
+      kakao.maps.event.addListener(map, "zoom_changed", () => setZoomLevel(map.getLevel()));
       const nodes = new Map<number, HTMLDivElement>();
       for (const spot of spots) {
         const node = document.createElement("div");
@@ -144,6 +181,33 @@ export function MapView({
     };
   }, [selected, date]);
 
+  // 필터(추정치·여유만)로 숨는 마커 판정 — 솎아내기 대표 선정과 렌더가 공유
+  const isFiltered = useCallback(
+    (c: Congestion | undefined) => {
+      if (calmOnly) return !(c && c.level <= 2 && (!c.is_imputed || showImputed));
+      return c ? c.is_imputed && !showImputed : false;
+    },
+    [calmOnly, showImputed],
+  );
+
+  // 줌아웃 상태 마커 솎아내기: 화면상 ~34px 격자당 대표 1개(높은 혼잡 우선 — 경고 가치).
+  // 클러스터러는 혼잡도 4색 정보가 뭉개져서 쓰지 않는다. 줌인(≤8)하면 전체 표시.
+  const visibleIds = useMemo(() => {
+    if (zoomLevel <= 8) return null;
+    // 레벨 10에서 실측 약 100m/px, 레벨당 2배 — 34px 격자를 위도(deg)로 환산
+    const cellDeg = (34 * 100 * Math.pow(2, zoomLevel - 10)) / 111000;
+    const best = new Map<string, { id: number; rank: number }>();
+    for (const s of spots) {
+      const c = congestion.get(s.spot_id);
+      if (isFiltered(c)) continue;
+      const key = `${Math.floor(s.lat / cellDeg)}:${Math.floor(s.lng / cellDeg)}`;
+      const rank = c ? c.level * 1000 + c.pressure : -1;
+      const prev = best.get(key);
+      if (!prev || rank > prev.rank) best.set(key, { id: s.spot_id, rank });
+    }
+    return new Set([...best.values()].map((v) => v.id));
+  }, [spots, congestion, zoomLevel, isFiltered]);
+
   // 마커는 Kakao CustomOverlay 노드에 포털로 렌더 — 혼잡도 변경 시 색만 리렌더
   const markerPortals =
     overlayNodes &&
@@ -151,39 +215,94 @@ export function MapView({
       const node = overlayNodes.get(spot.spot_id);
       if (!node) return null;
       const c = congestion.get(spot.spot_id);
-      const hidden = c ? c.is_imputed && !showImputed : false;
-      const color = c ? (LEVEL_COLOR[c.level] ?? "#475569") : "#475569";
       const isSelected = selected?.spot_id === spot.spot_id;
+      const hidden =
+        !isSelected && (isFiltered(c) || (visibleIds !== null && !visibleIds.has(spot.spot_id)));
+      const color = c ? (LEVEL_COLOR[c.level] ?? "#475569") : "#475569";
       const size = (c && c.level >= 3 ? 18 : 14) + (isSelected ? 8 : 0);
       return createPortal(
         hidden ? null : (
-          <button
-            type="button"
-            aria-label={spot.name}
-            onClick={() => {
-              tapLight();
-              setSelected(spot);
-            }}
-            style={{
-              width: size,
-              height: size,
-              borderRadius: 9999,
-              border: isSelected ? "3px solid #ffffff" : "2px solid #ffffff",
-              boxShadow: isSelected
-                ? `0 0 0 3px ${color}55, 0 2px 8px rgb(16 33 58 / 0.45)`
-                : "0 1px 4px rgb(16 33 58 / 0.35)",
-              background: color,
-              cursor: "pointer",
-              display: "block",
-              padding: 0,
-              transition: "width 0.15s, height 0.15s, box-shadow 0.15s",
-            }}
-          />
+          <div style={{ position: "relative" }}>
+            {/* 선택 마커 이름 라벨 — 경로 보기 출발·도착 라벨과 같은 문법 */}
+            {isSelected ? (
+              <span className="pointer-events-none absolute bottom-[calc(100%+7px)] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink px-2.5 py-1 text-[11px] font-bold text-white shadow-card">
+                {spotDisplayName(spot.name)}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              aria-label={spot.name}
+              onClick={() => {
+                tapLight();
+                setSelected(spot);
+              }}
+              style={{
+                width: size,
+                height: size,
+                borderRadius: 9999,
+                border: isSelected ? "3px solid #ffffff" : "2px solid #ffffff",
+                boxShadow: isSelected
+                  ? `0 0 0 3px ${color}55, 0 2px 8px rgb(16 33 58 / 0.45)`
+                  : "0 1px 4px rgb(16 33 58 / 0.35)",
+                background: color,
+                cursor: "pointer",
+                display: "block",
+                padding: 0,
+                transition: "width 0.15s, height 0.15s, box-shadow 0.15s",
+              }}
+            />
+          </div>
         ),
         node,
         `marker-${spot.spot_id}`,
       );
     });
+
+  const showLocMsg = useCallback((msg: string) => {
+    setLocMsg(msg);
+    if (locMsgTimer.current) clearTimeout(locMsgTimer.current);
+    locMsgTimer.current = setTimeout(() => setLocMsg(null), 2200);
+  }, []);
+
+  const locateMe = useCallback(() => {
+    tapLight();
+    const kakao = window.kakao;
+    const map = mapRef.current;
+    if (!navigator.geolocation || !kakao || !map) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        const inJeju =
+          lat >= JEJU_BBOX.minLat &&
+          lat <= JEJU_BBOX.maxLat &&
+          lng >= JEJU_BBOX.minLng &&
+          lng <= JEJU_BBOX.maxLng;
+        if (!inJeju) {
+          showLocMsg("현위치가 제주 밖이에요");
+          return;
+        }
+        const pt = new kakao.maps.LatLng(lat, lng);
+        if (!myLocRef.current) {
+          const node = document.createElement("div");
+          node.className =
+            "h-3.5 w-3.5 rounded-full border-2 border-white bg-cta shadow-[0_0_0_6px_rgb(26_159_255/0.25)]";
+          myLocRef.current = new kakao.maps.CustomOverlay({
+            position: pt,
+            content: node,
+            yAnchor: 0.5,
+            clickable: false,
+          });
+        } else {
+          myLocRef.current.setPosition(pt);
+        }
+        myLocRef.current.setMap(map);
+        map.setCenter(pt);
+        map.setLevel(7);
+      },
+      () => showLocMsg("위치 권한을 확인해 주세요"),
+      { timeout: 5000, maximumAge: 60_000 },
+    );
+  }, [showLocMsg]);
 
   const fallbackList = useMemo(() => {
     if (status !== "failed") return [];
@@ -195,7 +314,7 @@ export function MapView({
   }, [status, spots, congestion, showImputed]);
 
   return (
-    <div className="relative flex min-h-[calc(100dvh-5rem)] flex-col">
+    <div className="relative h-[calc(100dvh-5rem)]">
       <CoachMark id="map" steps={MAP_COACH} />
       {jsKey ? (
         <Script
@@ -206,20 +325,13 @@ export function MapView({
         />
       ) : null}
 
-      <header className="space-y-3 bg-surface px-5 pb-3 pt-[calc(3rem+env(safe-area-inset-top,0px))] shadow-card">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-ink">혼잡도 지도</h1>
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-dim">
-            <input
-              type="checkbox"
-              checked={showImputed}
-              onChange={(e) => setShowImputed(e.target.checked)}
-              className="h-4 w-4 accent-primary"
-            />
-            추정치 포함
-          </label>
-        </div>
-        <div className="flex items-center gap-3">
+      {/* 풀블리드 지도 (네이버·구글 문법) — 컨트롤은 전부 지도 위 플로팅 */}
+      <div ref={containerRef} className="absolute inset-0" aria-label="제주 혼잡도 지도" role="application" />
+      {markerPortals}
+
+      <h1 className="sr-only">혼잡도 지도</h1>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3 pt-[calc(env(safe-area-inset-top,0px)+0.625rem)]">
+        <div className="pointer-events-auto flex items-center gap-3 rounded-card bg-surface/95 p-3 shadow-card">
           <label className="sr-only" htmlFor="map-date">
             날짜
           </label>
@@ -230,9 +342,9 @@ export function MapView({
             min={HORIZON_START}
             max={HORIZON_END}
             onChange={(e) => setDate(e.target.value)}
-            className="rounded-lg border border-line bg-card px-3 py-2 text-base text-ink shadow-card"
+            className="shrink-0 rounded-lg border border-line bg-bg px-2.5 py-1.5 text-base text-ink"
           />
-          <div className="flex-1" data-coach="map-hour">
+          <div className="min-w-0 flex-1" data-coach="map-hour">
             <label htmlFor="map-hour" className="flex justify-between text-xs text-dim">
               <span>시간</span>
               <span className="font-semibold text-ink">{hour}시</span>
@@ -249,26 +361,58 @@ export function MapView({
             />
           </div>
         </div>
-        <div className="flex items-center gap-3 text-[11px] text-dim" data-coach="map-legend" aria-hidden>
-          {([1, 2, 3, 4] as const).map((lv) => (
-            <span key={lv} className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: LEVEL_COLOR[lv] }} />
-              {lv === 1 ? "여유" : lv === 2 ? "보통" : lv === 3 ? "붐빔" : "혼잡"}
-            </span>
-          ))}
+        <div className="pointer-events-auto mt-2 flex items-center gap-1.5">
+          {/* 기준 lv1~2 — lv1 배지명 "여유"와 혼동을 피해 홈과 같은 어휘를 쓴다 */}
+          <FilterChip active={calmOnly} onClick={() => setCalmOnly((v) => !v)}>
+            한적한 곳만
+          </FilterChip>
+          <FilterChip active={showImputed} onClick={() => setShowImputed((v) => !v)}>
+            추정치 포함
+          </FilterChip>
         </div>
-      </header>
+      </div>
 
-      <div className="relative flex-1">
-        <div ref={containerRef} className="absolute inset-0" aria-label="제주 혼잡도 지도" role="application" />
-        {markerPortals}
-        {status === "loading" ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-surface">
-            <p className="animate-pulse text-sm text-dim">지도를 불러오는 중…</p>
-          </div>
-        ) : null}
-        {status === "failed" ? (
-          <div className="absolute inset-0 overflow-y-auto bg-bg px-5 pb-6">
+      {/* 범례 — 좌하단 플로팅 (시트가 열리면 그 뒤로 숨는다) */}
+      <div
+        className="absolute bottom-10 left-3 z-[5] flex items-center gap-2.5 rounded-full bg-surface/90 px-3 py-1.5 text-[11px] text-dim shadow-card"
+        data-coach="map-legend"
+        aria-hidden
+      >
+        {([1, 2, 3, 4] as const).map((lv) => (
+          <span key={lv} className="flex items-center gap-1">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: LEVEL_COLOR[lv] }} />
+            {lv === 1 ? "여유" : lv === 2 ? "보통" : lv === 3 ? "붐빔" : "혼잡"}
+          </span>
+        ))}
+      </div>
+
+      {/* 현위치 — 우하단 플로팅 */}
+      <button
+        type="button"
+        onClick={locateMe}
+        aria-label="내 위치로 이동"
+        className="absolute bottom-10 right-3 z-[5] cursor-pointer rounded-full bg-surface p-3 text-ink shadow-card active:scale-95"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5" aria-hidden>
+          <path strokeLinecap="round" d="M12 2v3m0 14v3M2 12h3m14 0h3" />
+          <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" />
+        </svg>
+      </button>
+      {locMsg ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-20 flex justify-center">
+          <span className="rounded-full bg-ink/85 px-3.5 py-1.5 text-xs font-medium text-white">
+            {locMsg}
+          </span>
+        </div>
+      ) : null}
+
+      {status === "loading" ? (
+        <div className="absolute inset-0 z-[5] flex items-center justify-center bg-surface">
+          <p className="animate-pulse text-sm text-dim">지도를 불러오는 중…</p>
+        </div>
+      ) : null}
+      {status === "failed" ? (
+        <div className="absolute inset-0 z-[5] overflow-y-auto bg-bg px-5 pb-6 pt-[calc(env(safe-area-inset-top,0px)+8rem)]">
             <div className="mb-4 rounded-card border border-lv3/40 bg-lv3/10 p-4 text-sm leading-relaxed text-ink">
               지도를 불러오지 못했습니다. Kakao Developers에 현재 도메인이 등록되어 있어야
               지도가 표시됩니다. 아래 리스트로 혼잡도를 확인하세요.
@@ -420,7 +564,6 @@ export function MapView({
             </div>
           </section>
         ) : null}
-      </div>
     </div>
   );
 }

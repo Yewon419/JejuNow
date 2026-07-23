@@ -6,6 +6,7 @@ export interface KakaoLatLng {
 export interface KakaoMapObj {
   setCenter(latlng: KakaoLatLng): void;
   setLevel(level: number): void;
+  getLevel(): number;
   setBounds(bounds: KakaoLatLngBounds): void;
 }
 
@@ -20,6 +21,7 @@ export interface KakaoPolyline {
 export interface KakaoCustomOverlay {
   setMap(map: KakaoMapObj | null): void;
   setZIndex(zIndex: number): void;
+  setPosition(latlng: KakaoLatLng): void;
 }
 
 export interface KakaoStaticMap {
@@ -42,7 +44,7 @@ export interface KakaoMapsApi {
     zIndex?: number;
   }) => KakaoCustomOverlay;
   event: {
-    addListener(target: KakaoMapObj, type: "click", handler: () => void): void;
+    addListener(target: KakaoMapObj, type: "click" | "zoom_changed", handler: () => void): void;
   };
   LatLngBounds: new () => KakaoLatLngBounds;
   Polyline: new (options: {

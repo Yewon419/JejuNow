@@ -24,6 +24,12 @@ export function SwipeNav({ children }: { children: React.ReactNode }) {
         start.current = null;
         return;
       }
+      // 슬라이더·입력 필드 위 드래그는 조작이지 스와이프가 아니다 (지도 시간 슬라이더 직격)
+      const target = e.target;
+      if (target instanceof Element && target.closest("input,select,textarea")) {
+        start.current = null;
+        return;
+      }
       const t = e.touches[0];
       start.current = { x: t.clientX, y: t.clientY };
     }
