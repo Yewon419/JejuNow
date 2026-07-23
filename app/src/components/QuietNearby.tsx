@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { haversineKm } from "@/lib/alternatives";
 import { catLabel, spotDisplayName } from "@/lib/constants";
+import { currentDayPlan } from "@/lib/scheduleStore";
 import { FeatureCourseCard } from "./FeatureCourseCard";
 import { LevelBadge } from "./LevelBadge";
-import type { Congestion, ScheduleSlot, Spot } from "@/lib/types";
+import type { Congestion, Spot } from "@/lib/types";
 
 // 제주 밖(여행 전 데스크톱 등)의 현위치는 추천 기준으로 무의미 — bbox 밖이면 무시
 const JEJU_BBOX = { minLat: 33.0, maxLat: 33.7, minLng: 126.0, maxLng: 127.1 };
-const STORAGE_KEY = "jejunow:schedule";
 
 type Origin = { lat: number; lng: number; label: string };
 
@@ -31,21 +31,16 @@ export function QuietNearby({
     // 1차: 계획해 둔 일정 스팟들의 중심점 (마이크로태스크 지연 — cascading render 회피)
     queueMicrotask(() => {
       if (cancelled) return;
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const parsed = JSON.parse(raw) as { slots?: ScheduleSlot[] };
-        const byId = new Map(spots.map((s) => [s.spot_id, s]));
-        const planned = (parsed.slots ?? [])
-          .map((sl) => byId.get(sl.spotId))
-          .filter((s): s is Spot => Boolean(s));
-        if (planned.length > 0) {
-          const lat = planned.reduce((acc, s) => acc + s.lat, 0) / planned.length;
-          const lng = planned.reduce((acc, s) => acc + s.lng, 0) / planned.length;
-          setOrigin((prev) => prev ?? { lat, lng, label: "일정 스팟 근처" });
-        }
-      } catch {
-        // 손상된 저장값 무시
+      const cur = currentDayPlan();
+      if (!cur) return;
+      const byId = new Map(spots.map((s) => [s.spot_id, s]));
+      const planned = cur.slots
+        .map((sl) => byId.get(sl.spotId))
+        .filter((s): s is Spot => Boolean(s));
+      if (planned.length > 0) {
+        const lat = planned.reduce((acc, s) => acc + s.lat, 0) / planned.length;
+        const lng = planned.reduce((acc, s) => acc + s.lng, 0) / planned.length;
+        setOrigin((prev) => prev ?? { lat, lng, label: "일정 스팟 근처" });
       }
     });
     // 2차(우선): 현위치 — 제주 안일 때만 채택

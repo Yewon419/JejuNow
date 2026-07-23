@@ -4,10 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { HORIZON_END, HORIZON_START, todayInHorizon } from "@/lib/constants";
 import { notifySuccess } from "@/lib/haptics";
+import { loadScheduleStore, saveScheduleStore } from "@/lib/scheduleStore";
 
 // 계획 여행자 2단계 — 여행 날짜를 먼저 받아 일정 화면에 채워 넘긴다.
-// 저장 형식은 ScheduleBuilder가 읽는 계약과 동일해야 한다.
-const STORAGE_KEY = "jejunow:schedule";
 
 export function OnboardingPlanner() {
   const router = useRouter();
@@ -16,14 +15,8 @@ export function OnboardingPlanner() {
   function go(withDate: boolean) {
     if (withDate) {
       notifySuccess();
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        const prev = raw ? (JSON.parse(raw) as { slots?: unknown }) : null;
-        const slots = Array.isArray(prev?.slots) ? prev.slots : [];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ date, slots }));
-      } catch {
-        // 저장 불가 환경 — 날짜 없이 진행
-      }
+      const store = loadScheduleStore();
+      saveScheduleStore({ ...store, current: date });
     }
     router.replace("/schedule");
   }

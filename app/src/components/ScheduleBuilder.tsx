@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { type Alternative, findAlternatives } from "@/lib/alternatives";
 import { SCHEDULE_COACH } from "@/lib/coach";
 import { tapLight, tapMedium } from "@/lib/haptics";
@@ -26,10 +26,9 @@ import {
   todayInHorizon,
 } from "@/lib/constants";
 import { fetchCongestionClient } from "@/lib/supabaseClient";
+import { type DayPlan, loadScheduleStore, saveScheduleStore } from "@/lib/scheduleStore";
 import type { Congestion, Journey, ScheduleSlot, Spot } from "@/lib/types";
 import { LevelBadge, LevelDot, PressureBar } from "./LevelBadge";
-
-const STORAGE_KEY = "jejunow:schedule";
 
 type SpotPicker = { open: boolean; forHour: number | null };
 
@@ -50,6 +49,8 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   // 자동 일정 짜기(오토플랜) 플로우 + 생성된 여정의 출발·도착 지점
   const [autoOpen, setAutoOpen] = useState(false);
   const [journey, setJourney] = useState<Journey | null>(null);
+  // 날짜별 일정 전체 — 날짜를 바꾸면 그 날짜의 일정으로 전환된다 (단일 일정이 따라오지 않게)
+  const byDateRef = useRef<Record<string, DayPlan>>({});
   // 연속 슬롯 간 거리·시간 — 경로 칩에 미리 표시 (fetchRoute 캐시로 RouteView와 공유)
   const [routeMeta, setRouteMeta] = useState<Map<string, RouteData>>(new Map());
 
@@ -60,16 +61,19 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw) as { date: string; slots: ScheduleSlot[]; journey?: Journey };
-          if (parsed.date >= HORIZON_START && parsed.date <= HORIZON_END) setDate(parsed.date);
-          if (Array.isArray(parsed.slots)) setSlots(parsed.slots);
-          if (parsed.journey?.origin) setJourney(parsed.journey);
+      const store = loadScheduleStore();
+      byDateRef.current = store.byDate;
+      const cur =
+        store.current !== null && store.current >= HORIZON_START && store.current <= HORIZON_END
+          ? store.current
+          : null;
+      if (cur !== null) {
+        setDate(cur);
+        const plan = store.byDate[cur];
+        if (plan) {
+          setSlots(plan.slots);
+          setJourney(plan.journey ?? null);
         }
-      } catch {
-        // 손상된 저장값은 무시
       }
       setLoaded(true);
     });
@@ -79,15 +83,21 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   }, []);
   useEffect(() => {
     if (!loaded) return;
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(journey ? { date, slots, journey } : { date, slots }),
-      );
-    } catch {
-      // 저장 불가 환경 무시
+    if (slots.length > 0) {
+      byDateRef.current[date] = journey ? { slots, journey } : { slots };
+    } else {
+      delete byDateRef.current[date];
     }
+    saveScheduleStore({ current: date, byDate: byDateRef.current });
   }, [date, slots, journey, loaded]);
+
+  // 날짜 전환 — 이전 날짜의 일정은 저장돼 있고, 새 날짜의 일정을 불러온다
+  function changeDate(next: string) {
+    setDate(next);
+    const plan = byDateRef.current[next];
+    setSlots(plan?.slots ?? []);
+    setJourney(plan?.journey ?? null);
+  }
 
   // 사용 중인 시간대 혼잡도 로드
   useEffect(() => {
@@ -206,7 +216,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
             value={date}
             min={HORIZON_START}
             max={HORIZON_END}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => changeDate(e.target.value)}
             className="rounded-lg border border-line bg-card px-3 py-2 text-base text-ink shadow-card"
           />
           <button

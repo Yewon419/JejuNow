@@ -68,7 +68,9 @@ export default async function SpotDetailPage({
   return (
     <main className="mx-auto min-h-dvh max-w-xl pb-32">
       <CoachMark id="spot" steps={SPOT_COACH} />
-      <DetailDismiss />
+      {/* 닫기 제스처 래퍼 — 당길 때 화면이 따라 내려온다. 고정 하단 바는 transform
+          컨테이닝 블록에 걸리면 위치가 깨지므로 래퍼 밖에 둔다 */}
+      <DetailDismiss>
       <div
         className={`relative h-80 w-full ${
           spot.image_url ? "bg-line" : "bg-gradient-to-br from-primary to-cta"
@@ -221,6 +223,7 @@ export default async function SpotDetailPage({
 
         <SpotMiniMap spotId={spotId} lat={spot.lat} lng={spot.lng} addr={spot.addr} />
       </div>
+      </DetailDismiss>
 
       {/* 스티키 하단 바 (Airbnb·Klook 문법): 지금 혼잡도 요약 + CTA. BottomNav와 같은
           구조로 바닥에 붙이고 홈 인디케이터는 배경 padding으로 덮는다 */}

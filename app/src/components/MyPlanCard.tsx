@@ -4,9 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatKstDate, LEVEL_COLOR, spotDisplayName } from "@/lib/constants";
+import { currentDayPlan } from "@/lib/scheduleStore";
 import type { Congestion, ScheduleSlot, Spot } from "@/lib/types";
-
-const STORAGE_KEY = "jejunow:schedule";
 
 type Plan = { date: string; slots: ScheduleSlot[] };
 
@@ -25,15 +24,8 @@ export function MyPlanCard({
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const parsed = JSON.parse(raw) as Partial<Plan>;
-        if (!parsed.date || !Array.isArray(parsed.slots) || parsed.slots.length === 0) return;
-        setPlan({ date: parsed.date, slots: parsed.slots });
-      } catch {
-        // 손상된 저장값 무시
-      }
+      const cur = currentDayPlan();
+      if (cur) setPlan({ date: cur.date, slots: cur.slots });
     });
     return () => {
       cancelled = true;
