@@ -261,6 +261,18 @@ iOS CI 함정 3건 (전부 실패 후 수정):
   (iOS가 엣지 제스처를 자체 소비하면 touchend가 안 온다 — touchmove 마지막 좌표로 판정)
 - E2E: 당김 중 translateY(44px) 실측·완료 시 이탈 / 엣지 touchend·touchcancel 양 경로 닫힘
 
+**엣지 백 스와이프 = 애플 표준 전환 (2026-07-23, 커밋 5afa6c8, iOS 재빌드):**
+- 실기기에서 JS 엣지 스와이프 불통(2차 시도까지 실패) → 근본 원인: iOS 시스템이
+  엣지 터치를 점유해 웹으로 이벤트가 오지 않는다(합성 이벤트만 통과). **JS로는 불가**
+- 애플 표준 = WKWebView `allowsBackForwardNavigationGestures`. Capacitor 기본 꺼짐 →
+  `SwipeBackViewController: CAPBridgeViewController` 서브클래스에서 활성화,
+  Main.storyboard customClass 연결. ⚠ 새 .swift 파일은 pbxproj 등록이 필요해
+  AppDelegate.swift 안에 클래스 추가(파일 추가 회피)
+- 네이티브 제스처는 SPA pushState 히스토리에도 동작(WKBackForwardList) — 전 화면
+  공통 뒤로가기, 인터랙티브 스냅샷 애니메이션 표준 제공
+- DetailDismiss는 당김 닫기만 유지(JS 엣지 로직 제거). 웹 데모는 브라우저 자체
+  백 스와이프가 있어 무손실
+
 **심사 준비 항목 (2026-07-20):**
 - ✅ 연령 등급 **4+** (7단계 설문 전부 응답, 172개국 적용). 「제한되지 않은 웹 액세스」는
   **아니요** — 웹뷰지만 주소창·자유 브라우징 UI가 없어 임의 웹페이지 탐색이 불가.
