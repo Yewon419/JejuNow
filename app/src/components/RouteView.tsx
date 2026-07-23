@@ -5,10 +5,54 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { type RouteData, fetchRoute, formatDuration, routeCoord } from "@/lib/api";
 import { haversineKm } from "@/lib/alternatives";
 import { spotDisplayName } from "@/lib/constants";
+import { tapLight } from "@/lib/haptics";
 import type { Spot } from "@/lib/types";
 
 type Status = "loading" | "ready" | "failed";
 type FailReason = "offroad" | "error";
+// 구글맵식 이동수단 탭 — 인앱 실경로는 자동차만(카카오내비 API가 자동차 전용).
+// 도보는 직선 기반 추정 표시, 대중교통은 카카오맵으로 연결(공개 API 없음)
+type TravelMode = "car" | "foot" | "transit";
+
+const MODE_LABEL: Record<TravelMode, string> = {
+  car: "자동차",
+  foot: "도보",
+  transit: "대중교통",
+};
+const MODE_SCHEME: Record<TravelMode, string> = {
+  car: "CAR",
+  foot: "FOOT",
+  transit: "PUBLICTRANSIT",
+};
+const MODE_ICON: Record<TravelMode, React.ReactNode> = {
+  car: (
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M3.5 13.5 5 9a2 2 0 0 1 1.9-1.4h10.2A2 2 0 0 1 19 9l1.5 4.5M4.5 13.5h15a1 1 0 0 1 1 1V18h-2.25a1.75 1.75 0 1 1-3.5 0h-5.5a1.75 1.75 0 1 1-3.5 0H3.5v-3.5a1 1 0 0 1 1-1Z"
+    />
+  ),
+  foot: (
+    <>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.75a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 7.5 9.75 13l-1.5 6M9.75 13l3.75 1.5.75 5M10.25 10 7.5 11.5M12.5 8.5l2.75 1.75 1.75-.75"
+      />
+    </>
+  ),
+  transit: (
+    <>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5 4.5h14a1 1 0 0 1 1 1V16a2 2 0 0 1-2 2h-.25a1.75 1.75 0 1 1-3.5 0h-4.5a1.75 1.75 0 1 1-3.5 0H6a2 2 0 0 1-2-2V5.5a1 1 0 0 1 1-1Z"
+      />
+      <path strokeLinecap="round" d="M4 10.5h16" />
+    </>
+  ),
+};
 
 /** 두 슬롯 간 자동차 경로를 앱 안에서 표시 — 카카오내비 API 경로를 우리 지도에 그린다.
  *  API 실패(콜드스타트·도로 밖 좌표 등) 시 외부 카카오맵 길찾기 링크로 폴백. */
@@ -24,6 +68,7 @@ export function RouteView({
   const [status, setStatus] = useState<Status>("loading");
   const [route, setRoute] = useState<RouteData | null>(null);
   const [failReason, setFailReason] = useState<FailReason>("error");
+  const [mode, setMode] = useState<TravelMode>("car");
   const containerRef = useRef<HTMLDivElement>(null);
   // 경로 실패 시 참고용 직선거리(좌표만으로 계산 — 서버 무관)
   const straightKm = haversineKm(from.lat, from.lng, to.lat, to.lng);
@@ -52,11 +97,13 @@ export function RouteView({
     };
   }, [from, to]);
 
-  // SDK + 경로가 모두 준비되면 지도에 그린다
+  // SDK + (자동차면 경로까지) 준비되면 지도에 그린다.
+  // 도보·대중교통은 실경로 API가 없어 직선 점선으로 방향만 보여준다
   const drawMap = useCallback(() => {
     const kakao = window.kakao;
     const container = containerRef.current;
-    if (!kakao || !container || !route) return;
+    if (!kakao || !container) return;
+    if (mode === "car" && !route) return;
     kakao.maps.load(() => {
       // 폴리라인이 도로 접근점(주차장) 기준이라 지도 중심·라벨도 route 좌표로 맞춘다
       const fc = routeCoord(from);
@@ -66,13 +113,17 @@ export function RouteView({
         (fc.lng + tc.lng) / 2,
       );
       const map = new kakao.maps.Map(container, { center, level: 9 });
-      const path = route.path.map(([lat, lng]) => new kakao.maps.LatLng(lat, lng));
+      const path =
+        mode === "car" && route
+          ? route.path.map(([lat, lng]) => new kakao.maps.LatLng(lat, lng))
+          : [new kakao.maps.LatLng(fc.lat, fc.lng), new kakao.maps.LatLng(tc.lat, tc.lng)];
       new kakao.maps.Polyline({
         map,
         path,
-        strokeWeight: 5,
+        strokeWeight: mode === "car" ? 5 : 4,
         strokeColor: "#0e7d8c",
-        strokeOpacity: 0.9,
+        strokeOpacity: mode === "car" ? 0.9 : 0.65,
+        strokeStyle: mode === "car" ? "solid" : "shortdash",
       });
       const bounds = new kakao.maps.LatLngBounds();
       for (const p of path) bounds.extend(p);
@@ -98,11 +149,33 @@ export function RouteView({
       }
       setStatus("ready");
     });
-  }, [route, from, to]);
+  }, [route, from, to, mode]);
 
   useEffect(() => {
-    if (sdkReady && route) drawMap();
-  }, [sdkReady, route, drawMap]);
+    if (!sdkReady) return;
+    if (mode === "car" && !route) return;
+    drawMap();
+  }, [sdkReady, route, mode, drawMap]);
+
+  // 카카오맵 앱 딥링크(모드 반영) — 앱이 없으면 1.4초 뒤 웹 링크 폴백
+  function openKakaoMap() {
+    const fc = routeCoord(from);
+    const tc = routeCoord(to);
+    const appUrl = `kakaomap://route?sp=${fc.lat},${fc.lng}&ep=${tc.lat},${tc.lng}&by=${MODE_SCHEME[mode]}`;
+    const timer = setTimeout(() => window.open(externalUrl, "_blank", "noopener"), 1400);
+    window.addEventListener("pagehide", () => clearTimeout(timer), { once: true });
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+        if (document.hidden) clearTimeout(timer);
+      },
+      { once: true },
+    );
+    window.location.href = appUrl;
+  }
+
+  const footKm = Math.round(straightKm * 1.3 * 10) / 10; // 직선 × 도로 우회 보정
+  const footMin = Math.max(1, Math.round((footKm / 4) * 60)); // 4km/h
 
   return (
     <div
@@ -144,14 +217,37 @@ export function RouteView({
           </button>
         </div>
 
+        {/* 구글맵식 이동수단 탭 */}
+        <div className="flex gap-1.5 px-5 pb-3">
+          {(["car", "foot", "transit"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              aria-pressed={mode === m}
+              onClick={() => {
+                tapLight();
+                setMode(m);
+              }}
+              className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-colors ${
+                mode === m ? "bg-ink text-white" : "bg-card text-ink shadow-card"
+              }`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className="h-4 w-4" aria-hidden>
+                {MODE_ICON[m]}
+              </svg>
+              {MODE_LABEL[m]}
+            </button>
+          ))}
+        </div>
+
         <div className="relative h-80 w-full bg-line">
           <div ref={containerRef} className="absolute inset-0" aria-label="경로 지도" />
-          {status === "loading" ? (
+          {mode === "car" && status === "loading" ? (
             <div className="absolute inset-0 flex items-center justify-center bg-surface">
               <p className="animate-pulse text-sm text-dim">경로를 불러오는 중…</p>
             </div>
           ) : null}
-          {status === "failed" ? (
+          {mode === "car" && status === "failed" ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-surface px-6 text-center">
               <svg
                 viewBox="0 0 24 24"
@@ -189,28 +285,38 @@ export function RouteView({
         </div>
 
         <div className="flex items-center justify-between gap-3 px-5 py-4">
-          {route ? (
+          {mode === "car" ? (
+            route ? (
+              <p className="text-sm text-ink">
+                <span className="font-bold">{(route.distance_m / 1000).toFixed(1)}km</span>
+                <span className="text-dim"> · 약 </span>
+                <span className="font-bold">{formatDuration(route.duration_s)}</span>
+                <span className="text-dim"> (자동차)</span>
+              </p>
+            ) : status === "failed" ? (
+              <p className="text-sm text-dim">
+                직선거리 <span className="font-bold text-ink">약 {straightKm.toFixed(1)}km</span>
+              </p>
+            ) : (
+              <span className="text-sm text-dim">자동차 경로</span>
+            )
+          ) : mode === "foot" ? (
             <p className="text-sm text-ink">
-              <span className="font-bold">{(route.distance_m / 1000).toFixed(1)}km</span>
-              <span className="text-dim"> · 약 </span>
-              <span className="font-bold">{formatDuration(route.duration_s)}</span>
-              <span className="text-dim"> (자동차)</span>
-            </p>
-          ) : status === "failed" ? (
-            <p className="text-sm text-dim">
-              직선거리 <span className="font-bold text-ink">약 {straightKm.toFixed(1)}km</span>
+              <span className="font-bold">약 {footKm.toFixed(1)}km</span>
+              <span className="text-dim"> · 도보 약 </span>
+              <span className="font-bold">{formatDuration(footMin * 60)}</span>
+              <span className="text-dim"> · 직선 기반 추정</span>
             </p>
           ) : (
-            <span className="text-sm text-dim">자동차 경로</span>
+            <p className="text-sm text-dim">경로·시간은 카카오맵에서 확인해요</p>
           )}
-          <a
-            href={externalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 rounded-xl border border-line bg-card px-4 py-2.5 text-sm font-semibold text-ink"
+          <button
+            type="button"
+            onClick={openKakaoMap}
+            className="shrink-0 cursor-pointer rounded-xl border border-line bg-card px-4 py-2.5 text-sm font-semibold text-ink"
           >
             카카오맵에서 열기
-          </a>
+          </button>
         </div>
       </div>
     </div>
