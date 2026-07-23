@@ -40,7 +40,20 @@ export type ScheduleSlot = {
   spotId: number;
 };
 
+/** 오토플랜이 만든 여정의 출발·도착 지점 — 타임라인 양끝 표시용 */
+export type JourneyPoint = {
+  lat: number;
+  lng: number;
+  label: string;
+};
+
+export type Journey = {
+  origin: JourneyPoint;
+  end: JourneyPoint | null; // 여정 끝 "정하지 않음"이면 null
+};
+
 export type Schedule = {
   date: string; // YYYY-MM-DD
   slots: ScheduleSlot[];
+  journey?: Journey; // 오토플랜 생성 시에만 존재 (수동 일정은 없음)
 };

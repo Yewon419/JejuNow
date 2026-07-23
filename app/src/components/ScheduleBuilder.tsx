@@ -26,7 +26,7 @@ import {
   todayInHorizon,
 } from "@/lib/constants";
 import { fetchCongestionClient } from "@/lib/supabaseClient";
-import type { Congestion, ScheduleSlot, Spot } from "@/lib/types";
+import type { Congestion, Journey, ScheduleSlot, Spot } from "@/lib/types";
 import { LevelBadge, LevelDot, PressureBar } from "./LevelBadge";
 
 const STORAGE_KEY = "jejunow:schedule";
@@ -47,8 +47,9 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   const [liveAlts, setLiveAlts] = useState<Map<string, Alternative[]>>(new Map());
   // 인앱 경로 보기 (카카오내비 API → 우리 지도)
   const [routeView, setRouteView] = useState<{ from: Spot; to: Spot } | null>(null);
-  // 자동 일정 짜기(오토플랜) 플로우
+  // 자동 일정 짜기(오토플랜) 플로우 + 생성된 여정의 출발·도착 지점
   const [autoOpen, setAutoOpen] = useState(false);
+  const [journey, setJourney] = useState<Journey | null>(null);
   // 연속 슬롯 간 거리·시간 — 경로 칩에 미리 표시 (fetchRoute 캐시로 RouteView와 공유)
   const [routeMeta, setRouteMeta] = useState<Map<string, RouteData>>(new Map());
 
@@ -62,9 +63,10 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
-          const parsed = JSON.parse(raw) as { date: string; slots: ScheduleSlot[] };
+          const parsed = JSON.parse(raw) as { date: string; slots: ScheduleSlot[]; journey?: Journey };
           if (parsed.date >= HORIZON_START && parsed.date <= HORIZON_END) setDate(parsed.date);
           if (Array.isArray(parsed.slots)) setSlots(parsed.slots);
+          if (parsed.journey?.origin) setJourney(parsed.journey);
         }
       } catch {
         // 손상된 저장값은 무시
@@ -78,11 +80,14 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   useEffect(() => {
     if (!loaded) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ date, slots }));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(journey ? { date, slots, journey } : { date, slots }),
+      );
     } catch {
       // 저장 불가 환경 무시
     }
-  }, [date, slots, loaded]);
+  }, [date, slots, journey, loaded]);
 
   // 사용 중인 시간대 혼잡도 로드
   useEffect(() => {
@@ -173,7 +178,11 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
 
   function removeSlot(hour: number) {
     tapLight();
-    setSlots((prev) => prev.filter((s) => s.hour !== hour));
+    setSlots((prev) => {
+      const next = prev.filter((s) => s.hour !== hour);
+      if (next.length === 0) setJourney(null); // 스팟이 없으면 출발·도착 표시도 무의미
+      return next;
+    });
   }
 
   function changeHour(from: number, to: number) {
@@ -218,14 +227,26 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
           spots={spots}
           date={date}
           existingCount={slots.length}
-          onApply={(next) => setSlots(next)}
+          onApply={(next, j) => {
+            setSlots(next);
+            setJourney(j);
+          }}
           onClose={() => setAutoOpen(false)}
         />
       ) : null}
 
       <ol aria-label="일정 슬롯" className="relative space-y-3 pl-8">
-        {slots.length > 1 ? (
+        {slots.length > 1 || (journey && slots.length > 0) ? (
           <span aria-hidden className="absolute bottom-5 left-[0.4375rem] top-5 w-0.5 bg-line" />
+        ) : null}
+        {/* 오토플랜 여정의 출발 지점 — 타임라인 맨 위 */}
+        {journey && slots.length > 0 ? (
+          <li className="relative">
+            <span className="absolute -left-8 top-0.5">
+              <span className="block h-3.5 w-3.5 rounded-full border-2 border-white bg-ink shadow-sm" />
+            </span>
+            <p className="pt-0.5 text-xs font-semibold text-dim">출발 · {journey.origin.label}</p>
+          </li>
         ) : null}
         {slots.map((slot, idx) => {
           const spot = spotById.get(slot.spotId);
@@ -354,6 +375,16 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
             </li>
           );
         })}
+
+        {/* 오토플랜 여정의 도착 지점 — 타임라인 맨 아래 */}
+        {journey?.end && slots.length > 0 ? (
+          <li className="relative">
+            <span className="absolute -left-8 top-0.5">
+              <span className="block h-3.5 w-3.5 rounded-full border-2 border-white bg-cta shadow-sm" />
+            </span>
+            <p className="pt-0.5 text-xs font-semibold text-dim">도착 · {journey.end.label}</p>
+          </li>
+        ) : null}
 
         {/* 빈 일정: 막막한 백지 대신 안내 장면 (계획 여행자가 처음 오는 화면) */}
         {loaded && slots.length === 0 ? (

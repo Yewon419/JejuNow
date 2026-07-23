@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CoachMark } from "@/components/CoachMark";
+import { DetailDismiss } from "@/components/DetailDismiss";
 import { LevelBadge, LevelDot } from "@/components/LevelBadge";
 import { SpotInfoCard } from "@/components/SpotInfoCard";
 import { SpotMiniMap } from "@/components/SpotMiniMap";
@@ -67,6 +68,7 @@ export default async function SpotDetailPage({
   return (
     <main className="mx-auto min-h-dvh max-w-xl pb-32">
       <CoachMark id="spot" steps={SPOT_COACH} />
+      <DetailDismiss />
       <div
         className={`relative h-80 w-full ${
           spot.image_url ? "bg-line" : "bg-gradient-to-br from-primary to-cta"

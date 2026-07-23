@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useCallback, useRef, useState } from "react";
 import {
-  JEJU_AIRPORT,
   buildOffer,
   chooseCandidate,
   finishPlan,
@@ -29,7 +28,7 @@ import {
 } from "@/lib/constants";
 import { tapLight, tapMedium } from "@/lib/haptics";
 import { fetchCongestionClient } from "@/lib/supabaseClient";
-import type { Congestion, ScheduleSlot, Spot } from "@/lib/types";
+import type { Congestion, Journey, ScheduleSlot, Spot } from "@/lib/types";
 import { LevelBadge } from "./LevelBadge";
 
 // 현위치가 제주 안일 때만 시작점으로 채택 (autoplan·QuietNearby와 동일 기준)
@@ -122,6 +121,8 @@ function CandidateCard({ cand, onPick }: { cand: Candidate; onPick: () => void }
   );
 }
 
+type Airport = { name: string; addr: string; lat: number; lng: number };
+
 export function AutoPlanFlow({
   spots,
   date,
@@ -132,7 +133,7 @@ export function AutoPlanFlow({
   spots: Spot[];
   date: string;
   existingCount: number;
-  onApply: (slots: ScheduleSlot[]) => void;
+  onApply: (slots: ScheduleSlot[], journey: Journey) => void;
   onClose: () => void;
 }) {
   const [step, setStep] = useState<Step>("questions");
@@ -143,10 +144,16 @@ export function AutoPlanFlow({
   const [endSpotId, setEndSpotId] = useState<number | null>(null);
   const [endQuery, setEndQuery] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
+  // 공항: 카카오 로컬 검색(전국 확대 대비 — 제주 고정 아님)으로 선택
+  const [airport, setAirport] = useState<Airport | null>(null);
+  const [airportQuery, setAirportQuery] = useState("");
+  const [airportResults, setAirportResults] = useState<Airport[]>([]);
+  const airportTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [plan, setPlan] = useState<AutoPlanState | null>(null);
   const [offer, setOffer] = useState<PairOffer | null>(null);
   const seedRef = useRef(0);
+  const originLabelRef = useRef("내 위치");
   const congCache = useRef(new Map<number, Map<number, Congestion>>());
 
   const spotById = new Map(spots.map((s) => [s.spot_id, s]));
@@ -159,7 +166,26 @@ export function AutoPlanFlow({
     transport !== null &&
     crowd !== null &&
     endKind !== null &&
-    (endKind !== "spot" || endSpotId !== null);
+    (endKind !== "spot" || endSpotId !== null) &&
+    (endKind !== "airport" || airport !== null);
+
+  function searchAirports(q: string) {
+    setAirportQuery(q);
+    if (airportTimer.current) clearTimeout(airportTimer.current);
+    const trimmed = q.trim();
+    if (trimmed.length === 0) {
+      setAirportResults([]);
+      return;
+    }
+    airportTimer.current = setTimeout(() => {
+      fetch(`/api/kakao-places?q=${encodeURIComponent(trimmed)}`)
+        .then(async (res) => (res.ok ? ((await res.json()) as { places: Airport[] }) : null))
+        .then((data) => {
+          if (data) setAirportResults(data.places);
+        })
+        .catch(() => setAirportResults([]));
+    }, 350);
+  }
 
   const startHour =
     date === kstTodayStr() ? Math.min(HOUR_MAX, nowKstHourClamped() + 1) : 9;
@@ -192,13 +218,14 @@ export function AutoPlanFlow({
     [spots],
   );
 
-  function initWith(origin: { lat: number; lng: number }) {
+  function initWith(origin: { lat: number; lng: number }, originLabel: string) {
     if (!pace || !transport || !crowd || !endKind) return;
+    originLabelRef.current = originLabel;
     const end: EndAnchor =
       endKind === "return"
         ? { kind: "return" }
-        : endKind === "airport"
-          ? { kind: "point", ...JEJU_AIRPORT, label: "제주국제공항" }
+        : endKind === "airport" && airport
+          ? { kind: "point", lat: airport.lat, lng: airport.lng, label: airport.name }
           : endKind === "spot" && endSpot
             ? { kind: "point", lat: endSpot.lat, lng: endSpot.lng, label: spotDisplayName(endSpot.name) }
             : { kind: "free" };
@@ -238,7 +265,7 @@ export function AutoPlanFlow({
           lat <= JEJU_BBOX.maxLat &&
           lng >= JEJU_BBOX.minLng &&
           lng <= JEJU_BBOX.maxLng;
-        if (inJeju) initWith({ lat, lng });
+        if (inJeju) initWith({ lat, lng }, "내 위치");
         else setStep("region");
       },
       () => setStep("region"),
@@ -273,7 +300,22 @@ export function AutoPlanFlow({
   function apply() {
     if (!plan) return;
     tapMedium();
-    onApply(toScheduleSlots(plan));
+    const endLabel =
+      endKind === "return"
+        ? "출발지로 복귀"
+        : endKind === "airport" && airport
+          ? airport.name
+          : endKind === "spot" && endSpot
+            ? spotDisplayName(endSpot.name)
+            : null;
+    const journey: Journey = {
+      origin: { lat: plan.origin.lat, lng: plan.origin.lng, label: originLabelRef.current },
+      end:
+        plan.end && endLabel !== null
+          ? { lat: plan.end.lat, lng: plan.end.lng, label: endLabel }
+          : null,
+    };
+    onApply(toScheduleSlots(plan), journey);
     onClose();
   }
 
@@ -350,6 +392,58 @@ export function AutoPlanFlow({
                   </OptionChip>
                 ))}
               </div>
+              {endKind === "airport" ? (
+                <div className="mt-3">
+                  {airport ? (
+                    <div className="flex items-center justify-between rounded-xl border border-line bg-card p-3">
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-ink">
+                          {airport.name}
+                        </span>
+                        {airport.addr ? (
+                          <span className="block truncate text-xs text-dim">{airport.addr}</span>
+                        ) : null}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setAirport(null)}
+                        className="shrink-0 cursor-pointer text-xs font-medium text-dim hover:text-ink"
+                      >
+                        다시 고르기
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        type="search"
+                        placeholder="공항 검색 (예: 제주, 김포)"
+                        value={airportQuery}
+                        onChange={(e) => searchAirports(e.target.value)}
+                        className="w-full rounded-lg border border-line bg-card px-3 py-2.5 text-base text-ink placeholder:text-dim"
+                      />
+                      <ul className="mt-2 space-y-1.5">
+                        {airportResults.map((a) => (
+                          <li key={`${a.name}-${a.lat}`}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                tapLight();
+                                setAirport(a);
+                                setAirportQuery("");
+                                setAirportResults([]);
+                              }}
+                              className="w-full cursor-pointer rounded-xl border border-line bg-card p-3 text-left"
+                            >
+                              <span className="block text-sm font-semibold text-ink">{a.name}</span>
+                              {a.addr ? <span className="text-xs text-dim">{a.addr}</span> : null}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              ) : null}
               {endKind === "spot" ? (
                 <div className="mt-3">
                   {endSpot ? (
@@ -435,7 +529,7 @@ export function AutoPlanFlow({
                   type="button"
                   onClick={() => {
                     tapLight();
-                    initWith(randomOrigin(spots, seedRef.current, r));
+                    initWith(randomOrigin(spots, seedRef.current, r), `${r} 근처`);
                   }}
                   className="cursor-pointer rounded-card bg-card py-6 text-center text-base font-bold text-ink shadow-card transition-transform active:scale-[0.98]"
                 >
