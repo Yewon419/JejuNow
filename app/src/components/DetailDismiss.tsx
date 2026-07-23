@@ -4,13 +4,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { tapLight } from "@/lib/haptics";
 
-// 상세 페이지 닫기 제스처 (iOS 관례 2종):
-// ① 최상단에서 아래로 당기기 — 화면이 손가락을 따라 내려오고, 충분히 당기면 닫힌다
-// ② 좌측 엣지→가운데 스와이프 (WKWebView 기본 백 제스처가 꺼져 있어 직접 구현)
+// 상세 페이지 닫기 제스처 — 최상단에서 아래로 당기기(화면이 손가락을 따라 내려오고,
+// 충분히 당기면 닫힌다). 좌측 엣지 백 스와이프는 JS로 구현하지 않는다: 시스템이 엣지
+// 터치를 점유해 실기기에서 이벤트가 오지 않는다. 애플 표준대로 iOS 셸의 WKWebView
+// 네이티브 제스처(allowsBackForwardNavigationGestures — SwipeBackViewController)가 담당.
 // children을 감싸는 래퍼에 transform을 준다. 고정 하단 바는 transform 컨테이닝 블록에
 // 걸리면 위치가 깨지므로 이 래퍼 밖(형제)에 둔다.
-const EDGE_PX = 32;
-const EDGE_MIN_DX = 50;
 const PULL_START_DY = 12; // 당김 모드 진입 판정
 const PULL_CLOSE_DY = 140; // 이만큼 당기면 닫힘
 const PULL_FLICK_DY = 70; // 빠른 플릭이면 이 거리로도 닫힘
@@ -22,7 +21,6 @@ export function DetailDismiss({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let start: { x: number; y: number; t: number; scrollY: number } | null = null;
-    let last: { x: number; y: number; t: number } | null = null;
     let pulling = false;
 
     function close() {
@@ -50,7 +48,6 @@ export function DetailDismiss({ children }: { children: React.ReactNode }) {
       }
       const t = e.touches[0];
       start = { x: t.clientX, y: t.clientY, t: e.timeStamp, scrollY: window.scrollY };
-      last = { x: t.clientX, y: t.clientY, t: e.timeStamp };
       pulling = false;
     }
 
@@ -58,15 +55,13 @@ export function DetailDismiss({ children }: { children: React.ReactNode }) {
       const s = start;
       if (!s || e.touches.length !== 1) return;
       const t = e.touches[0];
-      last = { x: t.clientX, y: t.clientY, t: e.timeStamp };
       const dx = t.clientX - s.x;
       const dy = t.clientY - s.y;
       if (!pulling) {
-        // 당김 모드 진입: 최상단 + 아래로 + 수직 우세 (엣지 스와이프와는 배타)
+        // 당김 모드 진입: 최상단 + 아래로 + 수직 우세
         if (
           s.scrollY <= 2 &&
           window.scrollY <= 0 &&
-          s.x > EDGE_PX &&
           dy > PULL_START_DY &&
           Math.abs(dy) > Math.abs(dx) * 1.2
         ) {
@@ -87,46 +82,32 @@ export function DetailDismiss({ children }: { children: React.ReactNode }) {
       }
     }
 
-    function finishEdge(s: { x: number; y: number }, endX: number, endY: number): boolean {
-      const dx = endX - s.x;
-      const dy = endY - s.y;
-      return s.x <= EDGE_PX && dx >= EDGE_MIN_DX && Math.abs(dx) > Math.abs(dy) * 1.2;
-    }
-
     function onEnd(e: TouchEvent) {
       const s = start;
       start = null;
-      if (!s) return;
+      if (!s || !pulling) return;
+      pulling = false;
       const t = e.changedTouches[0];
       const dy = t.clientY - s.y;
       const dt = Math.max(1, e.timeStamp - s.t);
-      if (pulling) {
-        pulling = false;
-        const el = wrapRef.current;
-        if (dy >= PULL_CLOSE_DY || (dy >= PULL_FLICK_DY && dy / dt >= PULL_FLICK_SPEED)) {
-          if (el) {
-            el.style.transition = "transform 0.22s ease-in";
-            el.style.transform = "translateY(100dvh)";
-          }
-          setTimeout(close, 170);
-        } else {
-          resetPull(true);
+      const el = wrapRef.current;
+      if (dy >= PULL_CLOSE_DY || (dy >= PULL_FLICK_DY && dy / dt >= PULL_FLICK_SPEED)) {
+        if (el) {
+          el.style.transition = "transform 0.22s ease-in";
+          el.style.transform = "translateY(100dvh)";
         }
-        return;
+        setTimeout(close, 170);
+      } else {
+        resetPull(true);
       }
-      if (finishEdge(s, t.clientX, t.clientY)) close();
     }
 
-    // iOS가 엣지 제스처를 자체 소비하면 touchend 대신 touchcancel이 온다 — 마지막 좌표로 판정
     function onCancel() {
-      const s = start;
       start = null;
       if (pulling) {
         pulling = false;
         resetPull(true);
-        return;
       }
-      if (s && last && finishEdge(s, last.x, last.y)) close();
     }
 
     window.addEventListener("touchstart", onStart, { passive: true });

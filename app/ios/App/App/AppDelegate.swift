@@ -47,3 +47,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
 }
+
+// 애플 표준 뒤로가기 — WKWebView 네이티브 엣지 스와이프(백/포워드 제스처).
+// Capacitor 기본값은 꺼짐이고, JS 터치 리스너는 시스템이 엣지 터치를 점유해
+// 실기기에서 동작하지 않는다. Main.storyboard가 이 클래스를 사용한다.
+// (새 .swift 파일은 pbxproj 등록이 필요해 기존 파일에 함께 둔다)
+class SwipeBackViewController: CAPBridgeViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        webView?.allowsBackForwardNavigationGestures = true
+    }
+}
