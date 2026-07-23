@@ -204,7 +204,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   }
 
   return (
-    <main className="space-y-6 px-5 pt-[calc(3rem+env(safe-area-inset-top,0px))]">
+    <main className="mx-auto w-full max-w-full space-y-6 px-5 pt-[calc(3rem+env(safe-area-inset-top,0px))] md:max-w-2xl">
       <CoachMark id="schedule" steps={SCHEDULE_COACH} />
       <header>
         <h1 className="text-2xl font-bold text-ink">내 여행</h1>

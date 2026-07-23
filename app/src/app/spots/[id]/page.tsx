@@ -66,7 +66,7 @@ export default async function SpotDetailPage({
   const nowC = nowHour !== null ? (day.find((d) => d.hour === nowHour) ?? null) : null;
 
   return (
-    <main className="mx-auto min-h-dvh max-w-xl pb-32 lg:max-w-3xl">
+    <main className="mx-auto min-h-dvh max-w-xl pb-32 lg:max-w-5xl">
       <CoachMark id="spot" steps={SPOT_COACH} />
       {/* 닫기 제스처 래퍼 — 당길 때 화면이 따라 내려온다. 고정 하단 바는 transform
           컨테이닝 블록에 걸리면 위치가 깨지므로 래퍼 밖에 둔다 */}
@@ -237,7 +237,7 @@ export default async function SpotDetailPage({
           구조로 바닥에 붙이고 홈 인디케이터는 배경 padding으로 덮는다 */}
       <div className="fixed inset-x-0 bottom-0 z-40">
         <div
-          className="mx-auto flex max-w-md items-center gap-3 border-t border-line bg-surface px-5 pt-3 sm:border-x md:max-w-xl lg:max-w-3xl"
+          className="mx-auto flex max-w-md items-center gap-3 border-t border-line bg-surface px-5 pt-3 sm:border-x md:max-w-xl lg:max-w-5xl"
           style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
         >
           <div className="min-w-0 flex-1">
