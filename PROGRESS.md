@@ -248,6 +248,19 @@ iOS CI 함정 3건 (전부 실패 후 수정):
   렌더+저장 / 엣지·당김 제스처로 상세 이탈 / 일반 영역 스와이프 → /map+모션 클래스 /
   캐러셀 안 스와이프 → 탭 유지
 
+**날짜별 일정·제스처 보강 (2026-07-23, 커밋 db1ce58 — 실기기 피드백 3건):**
+- 「날짜 바꿔도 계획이 그대로」 → 일정 저장을 날짜별로 분리. `lib/scheduleStore.ts`
+  (v2 `{current, byDate}`, v1 자동 이관, HORIZON_START 이전·빈 일정 정리).
+  소비자 4곳(ScheduleBuilder·MyPlanCard·QuietNearby·OnboardingPlanner) 일괄 전환.
+  E2E: v1 시드 이관→날짜 전환 시 0곳→복귀 시 복원, 저장 포맷 v2 확인
+- 당김 닫기 시각 반응: 래퍼 transform 직접 조작(저항 0.55)으로 화면이 손가락을
+  따라 내려오고, 140px(또는 70px+0.5px/ms 플릭) 넘으면 닫힘·미달이면 스냅백.
+  touchmove는 passive:false(당김 중 preventDefault로 네이티브 바운스 차단).
+  ⚠ 고정 하단 바는 transform 컨테이닝 블록에 걸리면 위치가 깨진다 — 래퍼 밖 형제로
+- 엣지 스와이프 미동작 → 판정 완화(32px·50px·비율 1.2) + **touchcancel 폴백**
+  (iOS가 엣지 제스처를 자체 소비하면 touchend가 안 온다 — touchmove 마지막 좌표로 판정)
+- E2E: 당김 중 translateY(44px) 실측·완료 시 이탈 / 엣지 touchend·touchcancel 양 경로 닫힘
+
 **심사 준비 항목 (2026-07-20):**
 - ✅ 연령 등급 **4+** (7단계 설문 전부 응답, 172개국 적용). 「제한되지 않은 웹 액세스」는
   **아니요** — 웹뷰지만 주소창·자유 브라우징 UI가 없어 임의 웹페이지 탐색이 불가.
