@@ -330,7 +330,8 @@ export function MapView({
       {markerPortals}
 
       <h1 className="sr-only">혼잡도 지도</h1>
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-3 pt-[calc(env(safe-area-inset-top,0px)+0.625rem)]">
+      {/* 아이패드(md+)에선 컨트롤이 지도 전폭으로 늘어지지 않게 중앙 max-w-md 캡 */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 mx-auto max-w-md px-3 pt-[calc(env(safe-area-inset-top,0px)+0.625rem)]">
         <div className="pointer-events-auto flex items-center gap-3 rounded-card bg-surface/95 p-3 shadow-card">
           <label className="sr-only" htmlFor="map-date">
             날짜
@@ -443,7 +444,7 @@ export function MapView({
         {selected ? (
           <section
             aria-label={`${selected.name} 상세 정보`}
-            className="absolute inset-x-0 bottom-0 z-10 animate-sheet-up overflow-hidden rounded-t-3xl border-t border-line bg-surface shadow-[0_-8px_30px_rgb(16_33_58_/_0.12)]"
+            className="absolute inset-x-0 bottom-0 z-10 mx-auto max-w-full animate-sheet-up overflow-hidden rounded-t-3xl border-t border-line bg-surface shadow-[0_-8px_30px_rgb(16_33_58_/_0.12)] md:max-w-xl md:border-x"
           >
             {/* 사진 배경 헤더 — 상세 히어로와 동일 문법: 실사진 + 스크림 + 흰 글씨 */}
             <div

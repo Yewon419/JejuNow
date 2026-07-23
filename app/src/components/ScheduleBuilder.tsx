@@ -445,7 +445,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
         >
           {/* viewport-fit=cover라 하단 시트는 홈 인디케이터 높이만큼 직접 띄운다 */}
           <div
-            className="max-h-[80dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-line bg-surface p-5"
+            className="max-h-[80dvh] w-full max-w-md overflow-y-auto rounded-t-3xl border-t border-line bg-surface p-5 md:max-w-xl"
             style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
           >
             <div className="mb-3 flex items-center justify-between">

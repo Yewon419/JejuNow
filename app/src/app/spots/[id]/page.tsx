@@ -229,7 +229,7 @@ export default async function SpotDetailPage({
           구조로 바닥에 붙이고 홈 인디케이터는 배경 padding으로 덮는다 */}
       <div className="fixed inset-x-0 bottom-0 z-40">
         <div
-          className="mx-auto flex max-w-md items-center gap-3 border-t border-line bg-surface px-5 pt-3 sm:border-x"
+          className="mx-auto flex max-w-md items-center gap-3 border-t border-line bg-surface px-5 pt-3 sm:border-x md:max-w-xl"
           style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
         >
           <div className="min-w-0 flex-1">

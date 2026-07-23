@@ -329,7 +329,7 @@ export function AutoPlanFlow({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-bg" role="dialog" aria-modal="true" aria-label="자동 일정 짜기">
       <div
-        className="mx-auto min-h-dvh max-w-md px-5 pt-[calc(env(safe-area-inset-top,0px)+1rem)]"
+        className="mx-auto min-h-dvh max-w-md px-5 pt-[calc(env(safe-area-inset-top,0px)+1rem)] md:max-w-xl"
         style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))" }}
       >
         <div className="mb-5 flex items-center justify-between">

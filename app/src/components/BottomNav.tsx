@@ -51,7 +51,7 @@ export function BottomNav() {
         폰 프레임(max-w-md)에 맞춰 바 배경도 프레임 폭만 차지한다.
       */}
       <div
-        className="mx-auto flex max-w-md border-t border-line bg-surface sm:border-x"
+        className="mx-auto flex max-w-md border-t border-line bg-surface sm:border-x md:max-w-2xl"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         {TABS.map((tab) => {

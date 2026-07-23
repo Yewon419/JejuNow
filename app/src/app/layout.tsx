@@ -34,8 +34,9 @@ export default function RootLayout({
       />
       <body className="min-h-dvh">
         <StaleReload />
-        {/* 폰 프레임 — 데스크톱에서도 모바일 비율(max-w-md)로 중앙 고정 */}
-        <div className="mx-auto min-h-dvh w-full max-w-md sm:border-x sm:border-line">
+        {/* 폰 프레임 — 모바일 비율(max-w-md) 중앙 고정. md+(아이패드 세로·가로)에선
+            프레임을 넓혀 중앙 컬럼 앱으로 (개별 화면 컨테이너·고정 바도 동기) */}
+        <div className="mx-auto min-h-dvh w-full max-w-md sm:border-x sm:border-line md:max-w-2xl">
           {children}
         </div>
       </body>
