@@ -13,6 +13,7 @@ import {
   sameLocation,
   simulateSchedule,
 } from "@/lib/api";
+import { AutoPlanFlow } from "./AutoPlanFlow";
 import { CoachMark } from "./CoachMark";
 import { RouteView } from "./RouteView";
 import {
@@ -46,6 +47,8 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   const [liveAlts, setLiveAlts] = useState<Map<string, Alternative[]>>(new Map());
   // 인앱 경로 보기 (카카오내비 API → 우리 지도)
   const [routeView, setRouteView] = useState<{ from: Spot; to: Spot } | null>(null);
+  // 자동 일정 짜기(오토플랜) 플로우
+  const [autoOpen, setAutoOpen] = useState(false);
   // 연속 슬롯 간 거리·시간 — 경로 칩에 미리 표시 (fetchRoute 캐시로 RouteView와 공유)
   const [routeMeta, setRouteMeta] = useState<Map<string, RouteData>>(new Map());
 
@@ -187,16 +190,38 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
       <header>
         <h1 className="text-2xl font-bold text-ink">내 여행</h1>
         {/* 사용법 설명은 코치마크가 대신한다 (중복 제거) */}
-        <input
-          type="date"
-          aria-label="여행 날짜"
-          value={date}
-          min={HORIZON_START}
-          max={HORIZON_END}
-          onChange={(e) => setDate(e.target.value)}
-          className="mt-3 rounded-lg border border-line bg-card px-3 py-2 text-base text-ink shadow-card"
-        />
+        <div className="mt-3 flex items-center gap-2.5">
+          <input
+            type="date"
+            aria-label="여행 날짜"
+            value={date}
+            min={HORIZON_START}
+            max={HORIZON_END}
+            onChange={(e) => setDate(e.target.value)}
+            className="rounded-lg border border-line bg-card px-3 py-2 text-base text-ink shadow-card"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              tapLight();
+              setAutoOpen(true);
+            }}
+            className="cursor-pointer rounded-lg bg-cta px-3.5 py-2.5 text-sm font-bold text-on-cta transition-transform active:scale-[0.97]"
+          >
+            자동으로 짜기
+          </button>
+        </div>
       </header>
+
+      {autoOpen ? (
+        <AutoPlanFlow
+          spots={spots}
+          date={date}
+          existingCount={slots.length}
+          onApply={(next) => setSlots(next)}
+          onClose={() => setAutoOpen(false)}
+        />
+      ) : null}
 
       <ol aria-label="일정 슬롯" className="relative space-y-3 pl-8">
         {slots.length > 1 ? (
