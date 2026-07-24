@@ -257,7 +257,9 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
           spots={spots}
           date={date}
           existingCount={slots.length}
-          onApply={(next, j) => {
+          onApply={(planDate, next, j) => {
+            // 오토플랜이 내일로 짰을 수 있다 — 그 날짜로 전환하며 저장(useEffect가 반영)
+            setDate(planDate);
             setSlots(next);
             setJourney(j);
           }}

@@ -7,7 +7,9 @@ import {
   chooseCandidate,
   finishPlan,
   initAutoPlan,
+  planTargets,
   randomOrigin,
+  scarceWindow,
   skipOffer,
   toScheduleSlots,
   type AutoPlanState,
@@ -16,12 +18,17 @@ import {
   type EndAnchor,
   type Pace,
   type PairOffer,
+  type PlanPrefs,
   type Transport,
 } from "@/lib/autoplan";
 import { haversineKm } from "@/lib/alternatives";
 import {
+  HORIZON_END,
+  HORIZON_START,
   HOUR_MAX,
+  addDaysStr,
   catLabel,
+  formatKstDate,
   kstTodayStr,
   nowKstHourClamped,
   spotDisplayName,
@@ -133,10 +140,12 @@ export function AutoPlanFlow({
   spots: Spot[];
   date: string;
   existingCount: number;
-  onApply: (slots: ScheduleSlot[], journey: Journey) => void;
+  onApply: (planDate: string, slots: ScheduleSlot[], journey: Journey) => void;
   onClose: () => void;
 }) {
   const [step, setStep] = useState<Step>("questions");
+  // 오토플랜 자체 날짜 — 일정 탭 날짜로 시작하되 안에서 바꿀 수 있다(내일로 짜기)
+  const [planDate, setPlanDate] = useState(date);
   const [pace, setPace] = useState<Pace | null>(null);
   const [transport, setTransport] = useState<Transport | null>(null);
   const [crowd, setCrowd] = useState<Crowd | null>(null);
@@ -188,7 +197,13 @@ export function AutoPlanFlow({
   }
 
   const startHour =
-    date === kstTodayStr() ? Math.min(HOUR_MAX, nowKstHourClamped() + 1) : 9;
+    planDate === kstTodayStr() ? Math.min(HOUR_MAX, nowKstHourClamped() + 1) : 9;
+  // 선택 취향으로 남은 시간이 부족한지 — 목표가 3곳 미만이면 내일을 권한다
+  const prefsForWindow: PlanPrefs | null =
+    pace && transport && crowd ? { pace, transport, crowd, end: { kind: "free" } } : null;
+  const scarce = prefsForWindow ? scarceWindow(prefsForWindow, startHour) : false;
+  const windowTargetStops = prefsForWindow ? planTargets(prefsForWindow, startHour).stops : null;
+  const canGoTomorrow = addDaysStr(kstTodayStr(), 1) <= HORIZON_END;
 
   const loadOffer = useCallback(
     async (st: AutoPlanState) => {
@@ -230,7 +245,7 @@ export function AutoPlanFlow({
             ? { kind: "point", lat: endSpot.lat, lng: endSpot.lng, label: spotDisplayName(endSpot.name) }
             : { kind: "free" };
     const st = initAutoPlan({
-      date,
+      date: planDate,
       startHour,
       origin,
       prefs: { pace, transport, crowd, end },
@@ -315,7 +330,7 @@ export function AutoPlanFlow({
           ? { lat: plan.end.lat, lng: plan.end.lng, label: endLabel }
           : null,
     };
-    onApply(toScheduleSlots(plan), journey);
+    onApply(plan.date, toScheduleSlots(plan), journey);
     onClose();
   }
 
@@ -495,11 +510,37 @@ export function AutoPlanFlow({
                 </div>
               ) : null}
             </section>
-            {startHour >= HOUR_MAX - 1 ? (
-              <p className="text-xs leading-relaxed text-dim">
-                오늘은 남은 시간이 적어요. 날짜를 내일로 바꾸고 짜는 것도 좋아요.
-              </p>
-            ) : null}
+            <section>
+              <h3 className="mb-2.5 text-sm font-bold text-ink">언제 여행해요?</h3>
+              <input
+                type="date"
+                aria-label="여행 날짜"
+                value={planDate}
+                min={HORIZON_START}
+                max={HORIZON_END}
+                onChange={(e) => setPlanDate(e.target.value)}
+                className="rounded-lg border border-line bg-card px-3 py-2.5 text-base text-ink shadow-card"
+              />
+              {/* 오늘 남은 시간이 짧으면 내일을 권한다 — packed를 골라도 시간이 없으면 1~2곳뿐 */}
+              {scarce && planDate === kstTodayStr() && canGoTomorrow ? (
+                <div className="mt-2.5 rounded-card border border-lv2/40 bg-lv2/10 p-3">
+                  <p className="text-xs leading-relaxed text-ink">
+                    오늘은 남은 시간이 짧아 이대로는 {windowTargetStops}곳 정도만 짤 수 있어요.
+                    내일로 짜면 더 알차요.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      tapLight();
+                      setPlanDate(addDaysStr(kstTodayStr(), 1));
+                    }}
+                    className="mt-2 cursor-pointer text-sm font-bold text-primary underline underline-offset-4"
+                  >
+                    내일({formatKstDate(addDaysStr(kstTodayStr(), 1))})로 짜기
+                  </button>
+                </div>
+              ) : null}
+            </section>
             <button
               type="button"
               disabled={!ready}
@@ -630,6 +671,27 @@ export function AutoPlanFlow({
                   <p className="text-xs leading-relaxed text-dim">
                     조건에 맞는 곳이 더 없어서 여기까지 짰어요.
                   </p>
+                ) : null}
+                {/* 시간 만료(오늘 늦게 시작)로 적게 짜였으면 내일 다시 짜기를 권한다 */}
+                {plan.doneReason === "time" && plan.date === kstTodayStr() && canGoTomorrow ? (
+                  <div className="rounded-card border border-lv2/40 bg-lv2/10 p-3">
+                    <p className="text-xs leading-relaxed text-ink">
+                      오늘은 남은 시간이 짧아 {plan.stops.length}곳까지 짰어요. 더 알찬 일정은
+                      내일로 다시 짜보세요.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        tapLight();
+                        setPlanDate(addDaysStr(kstTodayStr(), 1));
+                        setPlan(null);
+                        setStep("questions");
+                      }}
+                      className="mt-2 cursor-pointer text-sm font-bold text-primary underline underline-offset-4"
+                    >
+                      내일로 다시 짜기
+                    </button>
+                  </div>
                 ) : null}
                 {finalLegKm !== null && finalLegKm > 1 ? (
                   <p className="text-xs leading-relaxed text-dim">

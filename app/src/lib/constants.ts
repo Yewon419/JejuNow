@@ -147,6 +147,12 @@ export function kstTodayStr(): string {
   return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
+/** "YYYY-MM-DD"의 N일 뒤 (문자열 파싱 — 순수, Date.now 불필요) */
+export function addDaysStr(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
 /** 호라이즌 내로 날짜를 보정한 오늘(KST) 문자열 */
 export function todayInHorizon(): string {
   const now = new Date(Date.now() + 9 * 3600 * 1000);

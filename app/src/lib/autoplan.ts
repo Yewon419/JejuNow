@@ -128,12 +128,19 @@ export function estHopHours(prefs: PlanPrefs): number {
   return Math.min(3, Math.max(1, Math.round(DWELL[prefs.pace] + travelH)));
 }
 
-/** 목표 스팟 수 — 시간 창(시작~20시)과 빡빡함으로 결정 */
+/** 목표 스팟 수 — 시간 창(시작~20시)과 빡빡함으로 결정.
+ *  하한을 fit(창이 허용하는 실제 슬롯 수)로 둔다 — 이전엔 억지로 2로 올려
+ *  "목표 2 표시 → 실제 1"의 불일치를 만들었다(시각이 20시에 붙으면 슬롯이 1개뿐). */
 export function planTargets(prefs: PlanPrefs, startHour: number): { stops: number; hopHours: number } {
   const hopHours = estHopHours(prefs);
   const window = HOUR_MAX - startHour;
   const fit = Math.floor(window / hopHours) + 1; // 시작 슬롯 포함
-  return { stops: Math.min(MAX_STOPS[prefs.pace], Math.max(2, fit)), hopHours };
+  return { stops: Math.min(MAX_STOPS[prefs.pace], Math.max(1, fit)), hopHours };
+}
+
+/** 이 날짜·시작 시각에 남은 시간이 오토플랜에 충분한가 — 부족하면 UI가 내일을 권한다 */
+export function scarceWindow(prefs: PlanPrefs, startHour: number): boolean {
+  return planTargets(prefs, startHour).stops < Math.min(3, MAX_STOPS[prefs.pace]);
 }
 
 export function initAutoPlan(input: {
