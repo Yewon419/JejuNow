@@ -104,6 +104,7 @@ export function CoachMark({ id, steps }: { id: CoachId; steps: CoachStep[] }) {
   if (!step) return null;
 
   const isLast = index === steps.length - 1;
+  const advance = () => (isLast ? finish() : setIndex((i) => i + 1));
   // 말풍선은 대상 아래에 두되, 대상이 화면 아래쪽이면 위로 붙인다
   const below = rect.top + rect.height + 180 < window.innerHeight;
 
@@ -114,6 +115,15 @@ export function CoachMark({ id, steps }: { id: CoachId; steps: CoachStep[] }) {
       aria-modal="true"
       aria-label={`사용법 안내 ${index + 1}/${steps.length}`}
     >
+      {/* 배경 아무 곳(스포트라이트 포함 — 구멍은 pointer-events-none)을 탭하면 다음으로.
+          말풍선은 형제 요소라 여기 안 걸린다(버튼 클릭과 분리) */}
+      <button
+        type="button"
+        onClick={advance}
+        aria-label={isLast ? "안내 닫기" : "다음 단계"}
+        className="absolute inset-0 h-full w-full cursor-default"
+      />
+
       {/* 구멍 뚫린 배경 — 거대한 box-shadow로 대상만 남기고 어둡게 */}
       <div
         className="pointer-events-none absolute rounded-xl ring-2 ring-white/70 transition-all duration-200"
@@ -151,7 +161,7 @@ export function CoachMark({ id, steps }: { id: CoachId; steps: CoachStep[] }) {
           </button>
           <button
             type="button"
-            onClick={() => (isLast ? finish() : setIndex((i) => i + 1))}
+            onClick={advance}
             className="cursor-pointer rounded-lg bg-cta px-5 py-2.5 text-sm font-bold text-on-cta"
           >
             {isLast ? "알겠어요" : "다음"}
