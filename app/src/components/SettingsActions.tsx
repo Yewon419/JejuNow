@@ -2,12 +2,25 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { signOut } from "@/lib/authClient";
 import { resetAllCoach } from "@/lib/coach";
 import { tapLight } from "@/lib/haptics";
 
 export function SettingsActions() {
   const router = useRouter();
   const [coachReset, setCoachReset] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function handleSignOut() {
+    tapLight();
+    setSigningOut(true);
+    try {
+      await signOut();
+      // 세션 소멸 → AuthGate가 로그인 화면으로 전환
+    } catch {
+      setSigningOut(false);
+    }
+  }
 
   function replayTutorial() {
     tapLight();
@@ -47,6 +60,19 @@ export function SettingsActions() {
         <span className="block font-semibold text-ink">여행자 유형 다시 고르기</span>
         <span className="mt-0.5 block text-sm text-dim">
           즉흥 여행자와 계획 여행자 중 다시 선택합니다.
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={handleSignOut}
+        disabled={signingOut}
+        aria-busy={signingOut}
+        className="w-full cursor-pointer rounded-card bg-card p-4 text-left shadow-card transition-transform active:scale-[0.99] disabled:opacity-60"
+      >
+        <span className="block font-semibold text-ink">로그아웃</span>
+        <span className="mt-0.5 block text-sm text-dim">
+          {signingOut ? "로그아웃 중…" : "현재 계정에서 로그아웃합니다."}
         </span>
       </button>
     </section>
