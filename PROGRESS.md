@@ -3,6 +3,32 @@
 > 재부팅/새 세션 시 이 파일부터 읽으면 이어서 진행 가능.
 > 설계 = `BUILD_PLAN.md` + **설계 v2(2026-07-10, 아래)**. 자율 구현 지시서 = `FABLE_TASKS.md`.
 
+## ⏭️ 다음 세션 재개점 — 계정 시스템 v1.1 (2026-07-25 중단, 코드 뼈대부터)
+
+**"제주나우 이어서" 하면 여기부터. `git checkout feature/auth-v1_1` 후 Phase 2 착수.**
+
+- **결정**: 계정 = 애플·구글·카카오 소셜 로그인. **뼈대만**(세션·로그인 게이트, 데이터
+  연동은 나중) · **이번 심사 제출 후 v1.1** · **로그인 필수**. 데이터는 이번엔 localStorage 유지
+- **아키텍처**: Supabase Auth 하나로 3개 다 처리(카카오도 기본 프로바이더 — 자체 백엔드/커스텀
+  OIDC 불필요). 네이티브는 `@capgo/capacitor-social-login`으로 구글·애플 네이티브 로그인
+  →`signInWithIdToken`(웹뷰 OAuth 쿠키 소실 함정 회피), 카카오는 인앱 브라우저 OAuth
+- **⚠ 브랜치 격리**: 계정 작업은 `feature/auth-v1_1`에서만. **master는 심사 무계정 트랙 —
+  계정 코드 절대 섞지 말 것**(App Privacy "식별자 0" 신고 보존). 웹데포는 수동 배포라 feature는
+  배포 안 하면 심사본 안전
+- ✅ **완료: 카카오 프로바이더** — 카카오 콘솔(로그인 활성화·Redirect URI·Client Secret) +
+  Supabase(REST API Key `f20bdd...` + Secret + Enabled + 이메일없이허용 ON). 키 백업
+  `_keys\JejuNow\.env`(KAKAO_OAUTH_CLIENT_SECRET). ⚠ 카카오 이메일은 비즈앱 검수 필요라
+  지금은 이메일 없이 로그인 허용 — 이메일 신원은 검수 후 v1.1 제출 준비 때
+- ⏳ **미완료(대표님 콘솔 사람단계)**: 구글(OAuth 동의화면+웹 클라이언트, **MFA는 통과됨**) /
+  애플(Service ID + `.p8` 키). 두 콘솔 다 리다이렉트 URI =
+  `https://vuneeprkjcaxhdhgwcva.supabase.co/auth/v1/callback`. Supabase Auth Providers에서 Google/Apple 패널에 각 Client ID·Secret 넣고 Enabled
+- 🔨 **다음 = Phase 2 코드 뼈대(이거부터 착수)**: ① `@supabase/supabase-js` 추가(지금은 raw
+  fetch만) ② `lib/authClient`(세션·`signInWithOAuth({provider})`·signOut) ③ 로그인 화면
+  (애플·구글·카카오 3버튼) ④ `AuthGate`(로그인 필수 — 세션 없으면 로그인 화면으로) ⑤ 웹데모에서
+  **카카오 로그인 E2E 검증**(카카오만 이미 붙었으니 바로 테스트 가능, 구글·애플은 콘솔 끝나면 자동 연결)
+- **Phase 3(이후)**: 네이티브(capacitor-social-login)+deep link, iOS 재빌드
+- **Phase 4(v1.1 제출 시)**: App Privacy 갱신·개인정보 처리방침 개정·수집 동의 화면
+
 ## 현재 단계 (2026-07-11, 설계 v2 전체 반영 종료 — 필수 단계 없음)
 
 **웹데모 복구 확인**: Supabase restore(07-11) → 전 라우트 200. Actions 3종 실전 검증 통과
