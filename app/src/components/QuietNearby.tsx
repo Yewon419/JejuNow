@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { haversineKm } from "@/lib/alternatives";
 import { catLabel, spotDisplayName } from "@/lib/constants";
-import { currentDayPlan } from "@/lib/scheduleStore";
+import { currentPlan } from "@/lib/scheduleStore";
 import { FeatureCourseCard } from "./FeatureCourseCard";
 import { LevelBadge } from "./LevelBadge";
 import type { Congestion, Spot } from "@/lib/types";
@@ -31,7 +31,7 @@ export function QuietNearby({
     // 1차: 계획해 둔 일정 스팟들의 중심점 (마이크로태스크 지연 — cascading render 회피)
     queueMicrotask(() => {
       if (cancelled) return;
-      const cur = currentDayPlan();
+      const cur = currentPlan();
       if (!cur) return;
       const byId = new Map(spots.map((s) => [s.spot_id, s]));
       const planned = cur.slots

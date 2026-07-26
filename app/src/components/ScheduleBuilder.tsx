@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { type Alternative, findAlternatives, haversineKm } from "@/lib/alternatives";
 import { SCHEDULE_COACH } from "@/lib/coach";
 import { tapLight, tapMedium } from "@/lib/haptics";
@@ -16,6 +16,7 @@ import {
 import { AutoPlanFlow } from "./AutoPlanFlow";
 import { CoachMark } from "./CoachMark";
 import { RouteView } from "./RouteView";
+import { SharePlanSheet } from "./SharePlanSheet";
 import {
   HORIZON_END,
   HORIZON_START,
@@ -26,15 +27,22 @@ import {
   todayInHorizon,
 } from "@/lib/constants";
 import { fetchCongestionClient } from "@/lib/supabaseClient";
-import { type DayPlan, loadScheduleStore, saveScheduleStore } from "@/lib/scheduleStore";
-import type { Congestion, Journey, ScheduleSlot, Spot } from "@/lib/types";
+import {
+  type ScheduleStore,
+  loadScheduleStore,
+  makePlan,
+  saveScheduleStore,
+} from "@/lib/scheduleStore";
+import type { Congestion, Plan, ScheduleSlot, Spot } from "@/lib/types";
 import { LevelBadge, LevelDot, PressureBar } from "./LevelBadge";
 
 type SpotPicker = { open: boolean; forHour: number | null };
 
+const EMPTY_SLOTS: ScheduleSlot[] = [];
+
 export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
-  const [date, setDate] = useState(todayInHorizon());
-  const [slots, setSlots] = useState<ScheduleSlot[]>([]);
+  // 다중 시안 저장소가 단일 소스 — 슬롯·날짜·여정은 현재 시안에서 파생한다.
+  const [store, setStore] = useState<ScheduleStore>({ plans: [], currentId: null });
   const [congestionByHour, setCongestionByHour] = useState<Map<number, Map<number, Congestion>>>(
     new Map(),
   );
@@ -46,34 +54,35 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   const [liveAlts, setLiveAlts] = useState<Map<string, Alternative[]>>(new Map());
   // 인앱 경로 보기 (카카오내비 API → 우리 지도)
   const [routeView, setRouteView] = useState<{ from: Spot; to: Spot } | null>(null);
-  // 자동 일정 짜기(오토플랜) 플로우 + 생성된 여정의 출발·도착 지점
+  // 자동 일정 짜기(오토플랜) 플로우
   const [autoOpen, setAutoOpen] = useState(false);
-  const [journey, setJourney] = useState<Journey | null>(null);
-  // 날짜별 일정 전체 — 날짜를 바꾸면 그 날짜의 일정으로 전환된다 (단일 일정이 따라오지 않게)
-  const byDateRef = useRef<Record<string, DayPlan>>({});
+  // 링크·QR 공유 시트
+  const [shareOpen, setShareOpen] = useState(false);
+  // 현재 시안 삭제 인라인 확인
+  const [confirmDelete, setConfirmDelete] = useState(false);
   // 연속 슬롯 간 거리·시간 — 경로 칩에 미리 표시 (fetchRoute 캐시로 RouteView와 공유)
   const [routeMeta, setRouteMeta] = useState<Map<string, RouteData>>(new Map());
 
   const spotById = useMemo(() => new Map(spots.map((s) => [s.spot_id, s])), [spots]);
 
-  // localStorage 복원 (외부 시스템 동기화 — 마이크로태스크로 지연해 cascading render 회피)
+  // 현재 시안에서 파생 (current가 안정적이면 slots 참조도 안정적 — 이펙트 의존성 안전)
+  const current = store.plans.find((p) => p.id === store.currentId) ?? null;
+  const date = current?.date ?? todayInHorizon();
+  const slots = current?.slots ?? EMPTY_SLOTS;
+  const journey = current?.journey ?? null;
+
+  // localStorage 복원 (외부 시스템 동기화 — 마이크로태스크로 지연해 cascading render 회피).
+  // 시안이 하나도 없으면 기본 시안을 만들어 항상 편집 대상이 있게 한다.
   useEffect(() => {
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;
-      const store = loadScheduleStore();
-      byDateRef.current = store.byDate;
-      const cur =
-        store.current !== null && store.current >= HORIZON_START && store.current <= HORIZON_END
-          ? store.current
-          : null;
-      if (cur !== null) {
-        setDate(cur);
-        const plan = store.byDate[cur];
-        if (plan) {
-          setSlots(plan.slots);
-          setJourney(plan.journey ?? null);
-        }
+      const s = loadScheduleStore();
+      if (s.plans.length === 0) {
+        const p = makePlan("시안 1");
+        setStore({ plans: [p], currentId: p.id });
+      } else {
+        setStore({ ...s, currentId: s.currentId ?? s.plans[0].id });
       }
       setLoaded(true);
     });
@@ -81,22 +90,55 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
       cancelled = true;
     };
   }, []);
+
+  // 저장소 변경 시 영속화
   useEffect(() => {
     if (!loaded) return;
-    if (slots.length > 0) {
-      byDateRef.current[date] = journey ? { slots, journey } : { slots };
-    } else {
-      delete byDateRef.current[date];
-    }
-    saveScheduleStore({ current: date, byDate: byDateRef.current });
-  }, [date, slots, journey, loaded]);
+    saveScheduleStore(store);
+  }, [store, loaded]);
 
-  // 날짜 전환 — 이전 날짜의 일정은 저장돼 있고, 새 날짜의 일정을 불러온다
+  function updateCurrent(mutator: (p: Plan) => Plan) {
+    setStore((s) => {
+      if (s.currentId === null) return s;
+      return { ...s, plans: s.plans.map((p) => (p.id === s.currentId ? mutator(p) : p)) };
+    });
+  }
+
+  function createPlan() {
+    tapLight();
+    setConfirmDelete(false);
+    setStore((s) => {
+      const nums = s.plans.map((p) => {
+        const m = p.name.match(/^시안 (\d+)$/);
+        return m ? Number(m[1]) : 0;
+      });
+      const p = makePlan(`시안 ${Math.max(0, ...nums) + 1}`);
+      return { plans: [...s.plans, p], currentId: p.id };
+    });
+  }
+
+  function switchPlan(id: string) {
+    tapLight();
+    setConfirmDelete(false);
+    setStore((s) => ({ ...s, currentId: id }));
+  }
+
+  function deleteCurrent() {
+    tapLight();
+    setConfirmDelete(false);
+    setStore((s) => {
+      const rest = s.plans.filter((p) => p.id !== s.currentId);
+      if (rest.length === 0) {
+        const p = makePlan("시안 1");
+        return { plans: [p], currentId: p.id };
+      }
+      return { plans: rest, currentId: rest[0].id };
+    });
+  }
+
+  // 날짜 전환 — 현재 시안의 날짜를 바꾼다
   function changeDate(next: string) {
-    setDate(next);
-    const plan = byDateRef.current[next];
-    setSlots(plan?.slots ?? []);
-    setJourney(plan?.journey ?? null);
+    updateCurrent((p) => ({ ...p, date: next }));
   }
 
   // 사용 중인 시간대 혼잡도 로드
@@ -199,28 +241,30 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   function addSlot(spotId: number) {
     tapMedium();
     const hour = picker.forHour ?? nextFreeHour(slots);
-    setSlots((prev) =>
-      [...prev.filter((s) => s.hour !== hour), { hour, spotId }].sort((a, b) => a.hour - b.hour),
-    );
+    updateCurrent((p) => ({
+      ...p,
+      slots: [...p.slots.filter((s) => s.hour !== hour), { hour, spotId }].sort(
+        (a, b) => a.hour - b.hour,
+      ),
+    }));
     setPicker({ open: false, forHour: null });
     setQuery("");
   }
 
   function removeSlot(hour: number) {
     tapLight();
-    setSlots((prev) => {
-      const next = prev.filter((s) => s.hour !== hour);
-      if (next.length === 0) setJourney(null); // 스팟이 없으면 출발·도착 표시도 무의미
-      return next;
+    updateCurrent((p) => {
+      const next = p.slots.filter((s) => s.hour !== hour);
+      // 스팟이 없으면 출발·도착 표시도 무의미
+      return { ...p, slots: next, journey: next.length === 0 ? null : p.journey };
     });
   }
 
   function changeHour(from: number, to: number) {
-    setSlots((prev) =>
-      prev
-        .map((s) => (s.hour === from ? { ...s, hour: to } : s))
-        .sort((a, b) => a.hour - b.hour),
-    );
+    updateCurrent((p) => ({
+      ...p,
+      slots: p.slots.map((s) => (s.hour === from ? { ...s, hour: to } : s)).sort((a, b) => a.hour - b.hour),
+    }));
   }
 
   return (
@@ -228,27 +272,107 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
       <CoachMark id="schedule" steps={SCHEDULE_COACH} />
       <header>
         <h1 className="text-2xl font-bold text-ink">내 여행</h1>
-        {/* 사용법 설명은 코치마크가 대신한다 (중복 제거) */}
-        <div className="mt-3 flex items-center gap-2.5">
-          <input
-            type="date"
-            aria-label="여행 날짜"
-            value={date}
-            min={HORIZON_START}
-            max={HORIZON_END}
-            onChange={(e) => changeDate(e.target.value)}
-            className="rounded-lg border border-line bg-card px-3 py-2 text-base text-ink shadow-card"
-          />
+
+        {/* 시안 전환 — 여러 계획표를 만들어 전환한다 */}
+        <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
+          {store.plans.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => switchPlan(p.id)}
+              className={`shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+                p.id === store.currentId
+                  ? "bg-ink text-white"
+                  : "bg-card text-dim shadow-card hover:text-ink"
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
           <button
             type="button"
-            onClick={() => {
-              tapLight();
-              setAutoOpen(true);
-            }}
-            className="cursor-pointer rounded-lg bg-cta px-3.5 py-2.5 text-sm font-bold text-on-cta transition-transform active:scale-[0.97]"
+            onClick={createPlan}
+            className="shrink-0 cursor-pointer rounded-full border border-dashed border-line px-3 py-1.5 text-sm font-semibold text-dim transition-colors hover:border-primary hover:text-primary"
           >
-            자동으로 짜기
+            + 새 시안
           </button>
+        </div>
+
+        {/* 현재 시안 이름·날짜·삭제 + 자동 짜기 */}
+        <div className="mt-3 space-y-2.5">
+          <input
+            type="text"
+            aria-label="시안 이름"
+            value={current?.name ?? ""}
+            onChange={(e) => updateCurrent((p) => ({ ...p, name: e.target.value }))}
+            placeholder="시안 이름"
+            className="w-full rounded-lg border border-line bg-card px-3 py-2 text-base font-semibold text-ink shadow-card"
+          />
+          <div className="flex flex-wrap items-center gap-2.5">
+            <input
+              type="date"
+              aria-label="여행 날짜"
+              value={date}
+              min={HORIZON_START}
+              max={HORIZON_END}
+              onChange={(e) => changeDate(e.target.value)}
+              className="rounded-lg border border-line bg-card px-3 py-2 text-base text-ink shadow-card"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                tapLight();
+                setAutoOpen(true);
+              }}
+              className="cursor-pointer rounded-lg bg-cta px-3.5 py-2.5 text-sm font-bold text-on-cta transition-transform active:scale-[0.97]"
+            >
+              자동으로 짜기
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                tapLight();
+                setShareOpen(true);
+              }}
+              disabled={slots.length === 0}
+              aria-label="이 시안 공유"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-card px-3.5 py-2.5 text-sm font-bold text-ink shadow-card transition-transform active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+              </svg>
+              공유
+            </button>
+            {confirmDelete ? (
+              <span className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={deleteCurrent}
+                  className="cursor-pointer rounded-lg bg-lv4/10 px-3 py-2 text-sm font-bold text-lv4"
+                >
+                  삭제
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="cursor-pointer rounded-lg px-2 py-2 text-sm font-medium text-dim hover:text-ink"
+                >
+                  취소
+                </button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                aria-label="이 시안 삭제"
+                className="cursor-pointer rounded-lg p-2 text-dim hover:text-lv4"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -258,12 +382,17 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
           date={date}
           existingCount={slots.length}
           onApply={(planDate, next, j) => {
-            // 오토플랜이 내일로 짰을 수 있다 — 그 날짜로 전환하며 저장(useEffect가 반영)
-            setDate(planDate);
-            setSlots(next);
-            setJourney(j);
+            // 오토플랜이 내일로 짰을 수 있다 — 현재 시안의 날짜·슬롯·여정을 통째로 반영
+            updateCurrent((p) => ({ ...p, date: planDate, slots: next, journey: j }));
           }}
           onClose={() => setAutoOpen(false)}
+        />
+      ) : null}
+
+      {shareOpen && current ? (
+        <SharePlanSheet
+          plan={{ name: current.name, date: current.date, slots: current.slots, journey: current.journey }}
+          onClose={() => setShareOpen(false)}
         />
       ) : null}
 

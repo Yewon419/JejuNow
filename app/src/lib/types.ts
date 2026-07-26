@@ -58,3 +58,12 @@ export type Schedule = {
   slots: ScheduleSlot[];
   journey?: Journey; // 오토플랜 생성 시에만 존재 (수동 일정은 없음)
 };
+
+/** 이름 붙인 하루 코스(시안). 사용자가 여러 개 만들어 전환·공유한다. */
+export type Plan = {
+  id: string;
+  name: string;
+  date: string; // YYYY-MM-DD
+  slots: ScheduleSlot[];
+  journey: Journey | null;
+};

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatKstDate, LEVEL_COLOR, spotDisplayName } from "@/lib/constants";
-import { currentDayPlan } from "@/lib/scheduleStore";
+import { currentPlan } from "@/lib/scheduleStore";
 import type { Congestion, ScheduleSlot, Spot } from "@/lib/types";
 
 type Plan = { date: string; slots: ScheduleSlot[] };
@@ -24,7 +24,7 @@ export function MyPlanCard({
     let cancelled = false;
     queueMicrotask(() => {
       if (cancelled) return;
-      const cur = currentDayPlan();
+      const cur = currentPlan();
       if (cur) setPlan({ date: cur.date, slots: cur.slots });
     });
     return () => {

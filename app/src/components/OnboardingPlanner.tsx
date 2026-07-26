@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { HORIZON_END, HORIZON_START, todayInHorizon } from "@/lib/constants";
+import { HORIZON_END, HORIZON_START, formatKstDate, todayInHorizon } from "@/lib/constants";
 import { notifySuccess } from "@/lib/haptics";
-import { loadScheduleStore, saveScheduleStore } from "@/lib/scheduleStore";
+import { loadScheduleStore, makePlan, saveScheduleStore } from "@/lib/scheduleStore";
 
 // 계획 여행자 2단계 — 여행 날짜를 먼저 받아 일정 화면에 채워 넘긴다.
 
@@ -16,7 +16,14 @@ export function OnboardingPlanner() {
     if (withDate) {
       notifySuccess();
       const store = loadScheduleStore();
-      saveScheduleStore({ ...store, current: date });
+      // 이 날짜의 시안이 이미 있으면 현재로 전환, 없으면 새로 만든다
+      const existing = store.plans.find((p) => p.date === date);
+      if (existing) {
+        saveScheduleStore({ ...store, currentId: existing.id });
+      } else {
+        const plan = makePlan(`${formatKstDate(date)} 코스`, date);
+        saveScheduleStore({ plans: [...store.plans, plan], currentId: plan.id });
+      }
     }
     router.replace("/schedule");
   }
