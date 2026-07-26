@@ -2,8 +2,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { CoachMark } from "@/components/CoachMark";
 import { LevelBadge } from "@/components/LevelBadge";
+import { FavoriteSpots } from "@/components/FavoriteSpots";
 import { MyPlanCard } from "@/components/MyPlanCard";
 import { QuietNearby } from "@/components/QuietNearby";
+import { TasteRecs } from "@/components/TasteRecs";
 import { DASHBOARD_COACH } from "@/lib/coach";
 import {
   type DayPart,
@@ -170,9 +172,12 @@ export default async function DashboardPage() {
           </div>
         </section>
       ) : null}
+
+      <FavoriteSpots spots={spots} />
       </div>
 
       <div className="min-w-0 space-y-7">
+        <TasteRecs spots={spots} congestion={congestion} />
         <QuietNearby spots={spots} congestion={congestion} />
       </div>
       </div>

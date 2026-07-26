@@ -7,6 +7,7 @@ import { LevelBadge, LevelDot } from "@/components/LevelBadge";
 import { SpotInfoCard } from "@/components/SpotInfoCard";
 import { SpotMiniMap } from "@/components/SpotMiniMap";
 import { SpotOverview } from "@/components/SpotOverview";
+import { SpotReactions } from "@/components/SpotReactions";
 import { findAlternatives } from "@/lib/alternatives";
 import { SPOT_COACH } from "@/lib/coach";
 import {
@@ -119,6 +120,8 @@ export default async function SpotDetailPage({
       </div>
 
       <div className="relative -mt-6 min-w-0 space-y-8 rounded-t-3xl bg-bg px-5 pt-8 lg:mt-0 lg:rounded-none lg:px-0 lg:pt-0">
+        <SpotReactions spotId={spotId} />
+
         <SpotInfoCard
           hours={spot.opening_hours}
           tel={spot.tel}
