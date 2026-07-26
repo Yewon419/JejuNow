@@ -70,6 +70,8 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   const date = current?.date ?? todayInHorizon();
   const slots = current?.slots ?? EMPTY_SLOTS;
   const journey = current?.journey ?? null;
+  // 날짜 안에 시안 — 상위는 날짜, 그 아래 이 날짜에 속한 시안들
+  const dailyPlans = store.plans.filter((p) => p.date === date);
 
   // localStorage 복원 (외부 시스템 동기화 — 마이크로태스크로 지연해 cascading render 회피).
   // 시안이 하나도 없으면 기본 시안을 만들어 항상 편집 대상이 있게 한다.
@@ -91,10 +93,11 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
     };
   }, []);
 
-  // 저장소 변경 시 영속화
+  // 저장소 변경 시 영속화 — 날짜를 훑다 만들어진 빈 시안은 현재 것만 남기고 정리
   useEffect(() => {
     if (!loaded) return;
-    saveScheduleStore(store);
+    const pruned = store.plans.filter((p) => p.slots.length > 0 || p.id === store.currentId);
+    saveScheduleStore({ plans: pruned, currentId: store.currentId });
   }, [store, loaded]);
 
   function updateCurrent(mutator: (p: Plan) => Plan) {
@@ -104,15 +107,19 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
     });
   }
 
+  // 현재 날짜 안에 새 시안 — 이름은 그 날짜 안에서 번호 매김
   function createPlan() {
     tapLight();
     setConfirmDelete(false);
     setStore((s) => {
-      const nums = s.plans.map((p) => {
-        const m = p.name.match(/^시안 (\d+)$/);
-        return m ? Number(m[1]) : 0;
-      });
-      const p = makePlan(`시안 ${Math.max(0, ...nums) + 1}`);
+      const d = s.plans.find((p) => p.id === s.currentId)?.date ?? todayInHorizon();
+      const nums = s.plans
+        .filter((p) => p.date === d)
+        .map((p) => {
+          const m = p.name.match(/^시안 (\d+)$/);
+          return m ? Number(m[1]) : 0;
+        });
+      const p = makePlan(`시안 ${Math.max(0, ...nums) + 1}`, d);
       return { plans: [...s.plans, p], currentId: p.id };
     });
   }
@@ -123,22 +130,44 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
     setStore((s) => ({ ...s, currentId: id }));
   }
 
+  // 현재 시안 삭제 — 같은 날짜에 시안이 남으면 그리로, 없으면 그 날짜에 빈 시안 하나 생성
   function deleteCurrent() {
     tapLight();
     setConfirmDelete(false);
     setStore((s) => {
+      const d = s.plans.find((p) => p.id === s.currentId)?.date ?? todayInHorizon();
       const rest = s.plans.filter((p) => p.id !== s.currentId);
-      if (rest.length === 0) {
-        const p = makePlan("시안 1");
-        return { plans: [p], currentId: p.id };
+      const restForDate = rest.filter((p) => p.date === d);
+      if (restForDate.length > 0) {
+        return { plans: rest, currentId: restForDate[0].id };
       }
-      return { plans: rest, currentId: rest[0].id };
+      const p = makePlan("시안 1", d);
+      return { plans: [...rest, p], currentId: p.id };
     });
   }
 
-  // 날짜 전환 — 현재 시안의 날짜를 바꾼다
+  // 날짜 전환. 빈 현재 시안은 새로 만들지 않고 날짜만 옮긴다 — 날짜 입력을 타이핑하면
+  // 중간값마다 onChange가 터지는데, 그때 매번 새 시안을 만들면 빈 시안이 폭증한다.
   function changeDate(next: string) {
-    updateCurrent((p) => ({ ...p, date: next }));
+    tapLight();
+    setConfirmDelete(false);
+    setStore((s) => {
+      const cur = s.plans.find((p) => p.id === s.currentId);
+      if (cur && cur.date === next) return s;
+      const forDate = s.plans.filter((p) => p.date === next && p.id !== s.currentId);
+      if (forDate.length > 0) {
+        // 그 날짜에 이미 시안이 있음 → 그리로. 현재가 빈 시안이면 버린다.
+        const plans = cur && cur.slots.length === 0 ? s.plans.filter((p) => p.id !== cur.id) : s.plans;
+        return { plans, currentId: forDate[0].id };
+      }
+      if (cur && cur.slots.length === 0) {
+        // 현재가 빈 시안 → 날짜만 옮긴다 (새로 만들지 않음)
+        return { ...s, plans: s.plans.map((p) => (p.id === cur.id ? { ...p, date: next } : p)) };
+      }
+      // 현재가 내용 있는 시안 → 그 시안은 원래 날짜에 두고, 새 날짜엔 빈 시안 생성
+      const p = makePlan("시안 1", next);
+      return { plans: [...s.plans, p], currentId: p.id };
+    });
   }
 
   // 사용 중인 시간대 혼잡도 로드
@@ -273,9 +302,23 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
       <header>
         <h1 className="text-2xl font-bold text-ink">내 여행</h1>
 
-        {/* 시안 전환 — 여러 계획표를 만들어 전환한다 */}
+        {/* 상위: 여행 날짜 선택 — 이 날짜 안에 여러 시안을 둔다 */}
+        <label className="mt-3 block">
+          <span className="mb-1.5 block text-sm font-semibold text-ink">여행 날짜</span>
+          <input
+            type="date"
+            aria-label="여행 날짜"
+            value={date}
+            min={HORIZON_START}
+            max={HORIZON_END}
+            onChange={(e) => changeDate(e.target.value)}
+            className="w-full rounded-lg border border-line bg-card px-3 py-2.5 text-base text-ink shadow-card"
+          />
+        </label>
+
+        {/* 이 날짜의 시안들 — 전환·추가 */}
         <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
-          {store.plans.map((p) => (
+          {dailyPlans.map((p) => (
             <button
               key={p.id}
               type="button"
@@ -298,7 +341,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
           </button>
         </div>
 
-        {/* 현재 시안 이름·날짜·삭제 + 자동 짜기 */}
+        {/* 현재 시안 이름·삭제 + 자동 짜기·공유 */}
         <div className="mt-3 space-y-2.5">
           <input
             type="text"
@@ -309,15 +352,6 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
             className="w-full rounded-lg border border-line bg-card px-3 py-2 text-base font-semibold text-ink shadow-card"
           />
           <div className="flex flex-wrap items-center gap-2.5">
-            <input
-              type="date"
-              aria-label="여행 날짜"
-              value={date}
-              min={HORIZON_START}
-              max={HORIZON_END}
-              onChange={(e) => changeDate(e.target.value)}
-              className="rounded-lg border border-line bg-card px-3 py-2 text-base text-ink shadow-card"
-            />
             <button
               type="button"
               onClick={() => {
