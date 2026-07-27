@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AddToScheduleButton } from "@/components/AddToScheduleButton";
 import { CoachMark } from "@/components/CoachMark";
 import { DetailDismiss } from "@/components/DetailDismiss";
 import { LevelBadge, LevelDot } from "@/components/LevelBadge";
@@ -261,12 +262,7 @@ export default async function SpotDetailPage({
               </p>
             )}
           </div>
-          <Link
-            href="/schedule"
-            className="shrink-0 rounded-card bg-cta px-6 py-3.5 text-sm font-bold text-on-cta transition-transform active:scale-[0.97]"
-          >
-            일정에 넣기
-          </Link>
+          <AddToScheduleButton spotId={spotId} />
         </div>
       </div>
     </main>
