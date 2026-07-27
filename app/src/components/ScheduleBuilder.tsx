@@ -299,39 +299,51 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   return (
     <main className="mx-auto w-full max-w-full space-y-6 px-5 pt-[calc(3rem+env(safe-area-inset-top,0px))] md:max-w-2xl">
       <CoachMark id="schedule" steps={SCHEDULE_COACH} />
-      <header>
-        <h1 className="text-2xl font-bold text-ink">내 여행</h1>
+      <header className="space-y-3">
+        {/* 제목 + 컴팩트 날짜 pill (탭하면 네이티브 날짜 선택) */}
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold text-ink">내 여행</h1>
+          <label className="relative inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full bg-card px-3.5 py-2 text-sm font-semibold text-ink shadow-card">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4 text-primary" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+            </svg>
+            <span className="tabular-nums">{shortDate(date)}</span>
+            <input
+              type="date"
+              aria-label="여행 날짜"
+              value={date}
+              min={HORIZON_START}
+              max={HORIZON_END}
+              onChange={(e) => changeDate(e.target.value)}
+              className="absolute inset-0 cursor-pointer opacity-0"
+            />
+          </label>
+        </div>
 
-        {/* 상위: 여행 날짜 선택 — 이 날짜 안에 여러 시안을 둔다 */}
-        <label className="mt-3 block">
-          <span className="mb-1.5 block text-sm font-semibold text-ink">여행 날짜</span>
-          <input
-            type="date"
-            aria-label="여행 날짜"
-            value={date}
-            min={HORIZON_START}
-            max={HORIZON_END}
-            onChange={(e) => changeDate(e.target.value)}
-            className="w-full rounded-lg border border-line bg-card px-3 py-2.5 text-base text-ink shadow-card"
-          />
-        </label>
-
-        {/* 이 날짜의 시안들 — 전환·추가 */}
-        <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
-          {dailyPlans.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => switchPlan(p.id)}
-              className={`shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
-                p.id === store.currentId
-                  ? "bg-ink text-white"
-                  : "bg-card text-dim shadow-card hover:text-ink"
-              }`}
-            >
-              {p.name}
-            </button>
-          ))}
+        {/* 이 날짜의 시안 — 전환/추가. 활성 칩은 탭해서 이름 편집 (중복 입력 제거) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {dailyPlans.map((p) =>
+            p.id === store.currentId ? (
+              <input
+                key={p.id}
+                type="text"
+                aria-label="시안 이름"
+                value={current?.name ?? ""}
+                onChange={(e) => updateCurrent((pp) => ({ ...pp, name: e.target.value }))}
+                placeholder="시안 이름"
+                className="shrink-0 rounded-full bg-ink px-3.5 py-1.5 text-base font-semibold text-white outline-none [field-sizing:content] min-w-[4rem] max-w-[13rem] placeholder:text-white/60"
+              />
+            ) : (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => switchPlan(p.id)}
+                className="shrink-0 cursor-pointer rounded-full bg-card px-3.5 py-1.5 text-sm font-semibold text-dim shadow-card transition-colors hover:text-ink"
+              >
+                {p.name}
+              </button>
+            ),
+          )}
           <button
             type="button"
             onClick={createPlan}
@@ -341,72 +353,61 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
           </button>
         </div>
 
-        {/* 현재 시안 이름·삭제 + 자동 짜기·공유 */}
-        <div className="mt-3 space-y-2.5">
-          <input
-            type="text"
-            aria-label="시안 이름"
-            value={current?.name ?? ""}
-            onChange={(e) => updateCurrent((p) => ({ ...p, name: e.target.value }))}
-            placeholder="시안 이름"
-            className="w-full rounded-lg border border-line bg-card px-3 py-2 text-base font-semibold text-ink shadow-card"
-          />
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => {
-                tapLight();
-                setAutoOpen(true);
-              }}
-              className="cursor-pointer rounded-lg bg-cta px-3.5 py-2.5 text-sm font-bold text-on-cta transition-transform active:scale-[0.97]"
-            >
-              자동으로 짜기
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                tapLight();
-                setShareOpen(true);
-              }}
-              disabled={slots.length === 0}
-              aria-label="이 시안 공유"
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-card px-3.5 py-2.5 text-sm font-bold text-ink shadow-card transition-transform active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-4 w-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
-              </svg>
-              공유
-            </button>
-            {confirmDelete ? (
-              <span className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={deleteCurrent}
-                  className="cursor-pointer rounded-lg bg-lv4/10 px-3 py-2 text-sm font-bold text-lv4"
-                >
-                  삭제
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(false)}
-                  className="cursor-pointer rounded-lg px-2 py-2 text-sm font-medium text-dim hover:text-ink"
-                >
-                  취소
-                </button>
-              </span>
-            ) : (
+        {/* 액션 한 줄 — 자동(주), 공유·삭제는 아이콘 */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              tapLight();
+              setAutoOpen(true);
+            }}
+            className="flex-1 cursor-pointer rounded-lg bg-cta px-3.5 py-2.5 text-sm font-bold text-on-cta transition-transform active:scale-[0.98]"
+          >
+            자동으로 짜기
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              tapLight();
+              setShareOpen(true);
+            }}
+            disabled={slots.length === 0}
+            aria-label="이 시안 공유"
+            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-line bg-card text-ink shadow-card transition-transform active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+            </svg>
+          </button>
+          {confirmDelete ? (
+            <span className="flex shrink-0 items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => setConfirmDelete(true)}
-                aria-label="이 시안 삭제"
-                className="cursor-pointer rounded-lg p-2 text-dim hover:text-lv4"
+                onClick={deleteCurrent}
+                className="cursor-pointer rounded-lg bg-lv4/10 px-3 py-2.5 text-sm font-bold text-lv4"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                </svg>
+                삭제
               </button>
-            )}
-          </div>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                className="cursor-pointer rounded-lg px-2 py-2.5 text-sm font-medium text-dim hover:text-ink"
+              >
+                취소
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              aria-label="이 시안 삭제"
+              className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-line bg-card text-dim shadow-card transition-transform active:scale-[0.97] hover:text-lv4"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+              </svg>
+            </button>
+          )}
         </div>
       </header>
 
@@ -704,6 +705,15 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
       ) : null}
     </main>
   );
+}
+
+const WEEKDAY_SHORT = ["일", "월", "화", "수", "목", "금", "토"];
+
+// 날짜 pill용 짧은 표기 — "7월 29일 (수)"
+function shortDate(d: string): string {
+  const [y, m, day] = d.split("-").map(Number);
+  const wd = WEEKDAY_SHORT[new Date(Date.UTC(y, m - 1, day)).getUTCDay()];
+  return `${m}월 ${day}일 (${wd})`;
 }
 
 function nextFreeHour(slots: ScheduleSlot[]): number {
