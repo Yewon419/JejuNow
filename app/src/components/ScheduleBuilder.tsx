@@ -31,6 +31,7 @@ import {
   type ScheduleStore,
   loadScheduleStore,
   makePlan,
+  nextFreeHour,
   saveScheduleStore,
 } from "@/lib/scheduleStore";
 import type { Congestion, Plan, ScheduleSlot, Spot } from "@/lib/types";
@@ -124,10 +125,15 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
     });
   }
 
+  // 시안 전환 — 빈 시안은 전환 대상만 남기고 정리한다. 저장 시에도 같은 규칙으로
+  // 정리되므로, 여기서 state를 맞춰야 새로고침 후 칩 목록이 달라지지 않는다.
   function switchPlan(id: string) {
     tapLight();
     setConfirmDelete(false);
-    setStore((s) => ({ ...s, currentId: id }));
+    setStore((s) => ({
+      plans: s.plans.filter((p) => p.slots.length > 0 || p.id === id),
+      currentId: id,
+    }));
   }
 
   // 현재 시안 삭제 — 같은 날짜에 시안이 남으면 그리로, 없으면 그 날짜에 빈 시안 하나 생성
@@ -716,13 +722,3 @@ function shortDate(d: string): string {
   return `${m}월 ${day}일 (${wd})`;
 }
 
-function nextFreeHour(slots: ScheduleSlot[]): number {
-  const used = new Set(slots.map((s) => s.hour));
-  for (let h = 10; h <= HOUR_MAX; h += 2) {
-    if (!used.has(h)) return h;
-  }
-  for (let h = HOUR_MIN; h <= HOUR_MAX; h += 1) {
-    if (!used.has(h)) return h;
-  }
-  return HOUR_MIN;
-}

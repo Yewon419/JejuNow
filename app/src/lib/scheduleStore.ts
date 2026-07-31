@@ -1,7 +1,14 @@
 // 일정 저장소 — 이름 붙인 하루 코스(시안)를 여러 개 보관하는 v3.
 // v2(날짜별 단일 일정 {current, byDate})·v1(단일 {date, slots})은 읽을 때 이관.
 // 소비자: ScheduleBuilder(읽기/쓰기), MyPlanCard·QuietNearby(현재 시안 읽기), OnboardingPlanner(시안 생성).
-import { HORIZON_END, HORIZON_START, formatKstDate, todayInHorizon } from "./constants";
+import {
+  HORIZON_END,
+  HORIZON_START,
+  HOUR_MAX,
+  HOUR_MIN,
+  formatKstDate,
+  todayInHorizon,
+} from "./constants";
 import type { Journey, Plan, ScheduleSlot } from "./types";
 
 const STORAGE_KEY = "jejunow:schedule";
@@ -87,10 +94,14 @@ export function loadScheduleStore(): ScheduleStore {
     if (!raw) return { plans: [], currentId: null };
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     if (parsed.v === 3 && Array.isArray(parsed.plans)) {
-      const plans = (parsed.plans as unknown[]).filter(isPlan).map((p) => ({
-        ...p,
-        journey: p.journey ?? null,
-      }));
+      const plans = (parsed.plans as unknown[])
+        .filter(isPlan)
+        // 지난 날짜 시안은 정리 (v2와 동일 규칙) — 안 하면 과거 여행이 영구 누적된다
+        .filter((p) => p.date >= HORIZON_START)
+        .map((p) => ({
+          ...p,
+          journey: p.journey ?? null,
+        }));
       const currentId =
         typeof parsed.currentId === "string" && plans.some((p) => p.id === parsed.currentId)
           ? parsed.currentId
@@ -115,6 +126,18 @@ export function saveScheduleStore(store: ScheduleStore): void {
   } catch {
     // 저장 불가 환경 무시
   }
+}
+
+/** 다음 빈 시간대 — 오전 10시부터 2시간 간격 우선, 다 차면 순차 탐색 */
+export function nextFreeHour(slots: ScheduleSlot[]): number {
+  const used = new Set(slots.map((s) => s.hour));
+  for (let h = 10; h <= HOUR_MAX; h += 2) {
+    if (!used.has(h)) return h;
+  }
+  for (let h = HOUR_MIN; h <= HOUR_MAX; h += 1) {
+    if (!used.has(h)) return h;
+  }
+  return HOUR_MIN;
 }
 
 /** 현재 선택된 시안 — 홈 「내 여행」 카드·근처 추천 기준점용. 비어 있으면 null. */

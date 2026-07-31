@@ -41,19 +41,45 @@ export function encodePlan(plan: SharedPlan): string {
   return toBase64Url(JSON.stringify(payload));
 }
 
+// 조작된 링크로 공개 /p 페이지가 렌더 중 터지지 않게 모양을 엄격히 검증한다.
+function isJourneyPoint(v: unknown): v is Journey["origin"] {
+  if (typeof v !== "object" || v === null) return false;
+  const p = v as Journey["origin"];
+  return typeof p.lat === "number" && typeof p.lng === "number" && typeof p.label === "string";
+}
+
+function sanitizeJourney(v: unknown): Journey | null {
+  if (typeof v !== "object" || v === null) return null;
+  const j = v as Journey;
+  if (!isJourneyPoint(j.origin)) return null;
+  const end = j.end == null ? null : isJourneyPoint(j.end) ? j.end : null;
+  return { origin: j.origin, end };
+}
+
 export function decodePlan(param: string): SharedPlan | null {
   try {
     const payload = JSON.parse(fromBase64Url(param)) as SharePayload;
     if (typeof payload.n !== "string" || typeof payload.d !== "string" || !Array.isArray(payload.s)) {
       return null;
     }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(payload.d)) return null;
     const slots: ScheduleSlot[] = payload.s
       .filter(
         (t): t is [number, number] =>
-          Array.isArray(t) && t.length === 2 && typeof t[0] === "number" && typeof t[1] === "number",
+          Array.isArray(t) &&
+          t.length === 2 &&
+          Number.isInteger(t[0]) &&
+          t[0] >= 0 &&
+          t[0] <= 23 &&
+          Number.isInteger(t[1]),
       )
       .map(([hour, spotId]) => ({ hour, spotId }));
-    return { name: payload.n, date: payload.d, slots, journey: payload.j ?? null };
+    return {
+      name: payload.n.slice(0, 60),
+      date: payload.d,
+      slots,
+      journey: sanitizeJourney(payload.j),
+    };
   } catch {
     return null;
   }
