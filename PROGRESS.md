@@ -42,17 +42,24 @@
 - **⚠ 브랜치 격리**: 계정 작업은 `feature/auth-v1_1`에서만. **master는 심사 무계정 트랙 —
   계정 코드 절대 섞지 말 것**(App Privacy "식별자 0" 신고 보존). 웹데포는 수동 배포라 feature는
   배포 안 하면 심사본 안전
-- ✅ **완료: 카카오 프로바이더** — 카카오 콘솔(로그인 활성화·Redirect URI·Client Secret) +
-  Supabase(REST API Key `f20bdd...` + Secret + Enabled + 이메일없이허용 ON). 키 백업
-  `_keys\JejuNow\.env`(KAKAO_OAUTH_CLIENT_SECRET). ⚠ 카카오 이메일은 비즈앱 검수 필요라
-  지금은 이메일 없이 로그인 허용 — 이메일 신원은 검수 후 v1.1 제출 준비 때
+- ✅ **Phase 2 코드 뼈대 완료**(커밋 `0e9f56d`): `@supabase/supabase-js` + `lib/authClient`
+  (PKCE·detectSessionInUrl) + `AuthProvider`/`AuthGate`(/privacy 예외) + `LoginScreen` 3버튼 +
+  설정 로그아웃. eslint 0·빌드 통과
+- ✅ **카카오 웹 E2E 완주**(2026-08-05, localhost 실측): 로그인 화면 → 카카오 동의 →
+  Supabase 콜백 → 대시보드(세션 provider=kakao) → 로그아웃 → 게이트 복귀. 전 사이클 검증
+- ⚠ **KOE205 함정 해소 기록**: Supabase gotrue는 카카오 scope 3종(`account_email
+  profile_image profile_nickname`)을 **하드코딩** — `scopes` 옵션은 추가만 되고 제거 불가
+  (kakao.go 소스 확인). 즉 동의항목 3개가 콘솔에 전부 설정돼 있어야 로그인 자체가 됨.
+  07-25의 "이메일은 검수 후" 가정은 성립 안 함
+- ✅ **카카오 콘솔 정리**(2026-08-05): 동의항목 3종 전부 「선택 동의」 + 앱 아이콘 등록(비즈 앱
+  전환 선행조건) + **개인 개발자 비즈 앱 전환 완료**(본인인증·카카오비즈니스 통합약관 기충족 상태라
+  콘솔 셀프서비스로 즉시 전환, 전환 목적=이메일 필수 동의). 데브톡 신청 불필요했음
+- 참고: 이메일이 「선택 동의」라 미체크 로그인 시 email=null — Supabase 「이메일없이허용 ON」이
+  커버. 이메일 필수화가 필요해지면 콘솔에서 「필수 동의」로 올리면 됨(비즈 앱이라 가능)
 - ⏳ **미완료(대표님 콘솔 사람단계)**: 구글(OAuth 동의화면+웹 클라이언트, **MFA는 통과됨**) /
   애플(Service ID + `.p8` 키). 두 콘솔 다 리다이렉트 URI =
-  `https://vuneeprkjcaxhdhgwcva.supabase.co/auth/v1/callback`. Supabase Auth Providers에서 Google/Apple 패널에 각 Client ID·Secret 넣고 Enabled
-- 🔨 **다음 = Phase 2 코드 뼈대(이거부터 착수)**: ① `@supabase/supabase-js` 추가(지금은 raw
-  fetch만) ② `lib/authClient`(세션·`signInWithOAuth({provider})`·signOut) ③ 로그인 화면
-  (애플·구글·카카오 3버튼) ④ `AuthGate`(로그인 필수 — 세션 없으면 로그인 화면으로) ⑤ 웹데모에서
-  **카카오 로그인 E2E 검증**(카카오만 이미 붙었으니 바로 테스트 가능, 구글·애플은 콘솔 끝나면 자동 연결)
+  `https://vuneeprkjcaxhdhgwcva.supabase.co/auth/v1/callback`. Supabase Auth Providers에서
+  Google/Apple 패널에 각 Client ID·Secret 넣고 Enabled — 코드 변경 없이 자동 연결
 - **Phase 3(이후)**: 네이티브(capacitor-social-login)+deep link, iOS 재빌드
 - **Phase 4(v1.1 제출 시)**: App Privacy 갱신·개인정보 처리방침 개정·수집 동의 화면
 
