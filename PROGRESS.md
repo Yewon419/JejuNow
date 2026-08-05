@@ -56,10 +56,13 @@
   콘솔 셀프서비스로 즉시 전환, 전환 목적=이메일 필수 동의). 데브톡 신청 불필요했음
 - 참고: 이메일이 「선택 동의」라 미체크 로그인 시 email=null — Supabase 「이메일없이허용 ON」이
   커버. 이메일 필수화가 필요해지면 콘솔에서 「필수 동의」로 올리면 됨(비즈 앱이라 가능)
-- ⏳ **미완료(대표님 콘솔 사람단계)**: 구글(OAuth 동의화면+웹 클라이언트, **MFA는 통과됨**) /
-  애플(Service ID + `.p8` 키). 두 콘솔 다 리다이렉트 URI =
+- **결정(2026-08-05): v1.1 제출은 카카오 단독** — 로그인 화면에서 구글·애플 버튼 제거
+  (커밋 `57c8b4c`, PROVIDERS 배열에 항목 복원만 하면 됨). ⚠ 애플 심사 가이드라인 4.8이
+  서드파티 소셜 로그인 시 Sign in with Apple 병행을 요구 — 리젝 시 애플 로그인 추가로 대응
+- ⏸ **보류(필요 시 재개, 대표님 콘솔 사람단계)**: 구글(OAuth 동의화면+웹 클라이언트,
+  **MFA는 통과됨**) / 애플(Service ID + `.p8` 키). 두 콘솔 다 리다이렉트 URI =
   `https://vuneeprkjcaxhdhgwcva.supabase.co/auth/v1/callback`. Supabase Auth Providers에서
-  Google/Apple 패널에 각 Client ID·Secret 넣고 Enabled — 코드 변경 없이 자동 연결
+  Google/Apple 패널에 각 Client ID·Secret 넣고 Enabled — 코드는 버튼 복원만
 - **Phase 3(이후)**: 네이티브(capacitor-social-login)+deep link, iOS 재빌드
 - **Phase 4(v1.1 제출 시)**: App Privacy 갱신·개인정보 처리방침 개정·수집 동의 화면
 
