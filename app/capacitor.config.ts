@@ -9,6 +9,9 @@ const config: CapacitorConfig = {
   server: {
     url: "https://jejunow.vercel.app",
     cleartext: false,
+    // 카카오 OAuth 왕복(Supabase authorize → kauth/accounts.kakao.com → 콜백)을 웹뷰 안에서
+    // 처리하기 위함. 없으면 외부 호스트 네비게이션이 Safari로 튕겨 세션이 앱으로 안 돌아온다.
+    allowNavigation: ["vuneeprkjcaxhdhgwcva.supabase.co", "*.kakao.com"],
   },
   ios: {
     // never = contentInsetAdjustmentBehavior.never (Capacitor 기본값).
