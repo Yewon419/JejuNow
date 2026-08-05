@@ -4,11 +4,9 @@ import { useState } from "react";
 import { signInWithProvider, type AuthProviderId } from "@/lib/authClient";
 import { tapMedium } from "@/lib/haptics";
 
-// 카카오만 현재 활성. 구글·애플은 Supabase 프로바이더 콘솔 완료 시 자동 동작(코드 변경 불필요).
+// v1.1 제출은 카카오 단독(2026-08-05 결정). 구글·애플 버튼은 콘솔 연동 후 필요 시 복원.
 const PROVIDERS: { id: AuthProviderId; label: string; className: string }[] = [
   { id: "kakao", label: "카카오로 시작하기", className: "bg-[#FEE500] text-[#191600]" },
-  { id: "google", label: "구글로 시작하기", className: "bg-card text-ink border border-line" },
-  { id: "apple", label: "Apple로 시작하기", className: "bg-black text-white" },
 ];
 
 export function LoginScreen() {
