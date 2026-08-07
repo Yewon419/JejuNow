@@ -63,7 +63,19 @@
   **MFA는 통과됨**) / 애플(Service ID + `.p8` 키). 두 콘솔 다 리다이렉트 URI =
   `https://vuneeprkjcaxhdhgwcva.supabase.co/auth/v1/callback`. Supabase Auth Providers에서
   Google/Apple 패널에 각 Client ID·Secret 넣고 Enabled — 코드는 버튼 복원만
-- **Phase 3(이후)**: 네이티브(capacitor-social-login)+deep link, iOS 재빌드
+- ✅ **Phase 3 준비 완료(2026-08-06~07, 카카오 단독으로 재정의 — capgo 불필요)**:
+  ① `capacitor.config.ts`에 `allowNavigation`(supabase 호스트+`*.kakao.com`) — 없으면 OAuth가
+  Safari로 튕겨 세션이 앱으로 안 돌아온다(커밋 `3057265`). ⚠ Windows에서 `cap sync`는
+  Package.swift에 백슬래시 경로를 박음 — 커밋 금지, CI(macOS)가 재생성
+  ② **Vercel 프리뷰 배포 + 카카오 E2E 통과**: `npx vercel deploy`(--prod 없이, 심사본 무접촉)
+  → 프리뷰 URL에서 로그인→세션(provider=kakao)→온보딩 진입 실측. 배포 번들 PKCE 검증 완료
+  ③ Supabase Redirect URLs에 `https://jejunow-*-yewon419s-projects.vercel.app/**` 추가
+- ⚠ **Supabase URL 설정 현황(v1.1 프로덕션 배포 시 사람 단계)**: Site URL이
+  `http://localhost:3000`(state 만료 시 여기로 폴백됨). v1.1을 프로덕션에 배포할 때
+  **Site URL → `https://jejunow.vercel.app` 변경 + Redirect URLs에
+  `https://jejunow.vercel.app/**` 추가** 필수
+- **Phase 3 잔여**: TestFlight 실기기 검증(웹뷰 내 카카오 로그인 + 카카오톡 앱 전환 동작) —
+  ASC에 심사용 무계정 빌드 대기 중이라 **심사 통과 후 권장**
 - **Phase 4(v1.1 제출 시)**: App Privacy 갱신·개인정보 처리방침 개정·수집 동의 화면
 
 ## 현재 단계 (2026-07-11, 설계 v2 전체 반영 종료 — 필수 단계 없음)
