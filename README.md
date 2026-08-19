@@ -5,6 +5,12 @@
 상위 스팟 쏠림(혼잡·만족도 저하)을 완화하기 위해, "지금/그날 어디가 한적한가"를 예측해
 같은 카테고리의 한적한 대안으로 수요를 분산시킨다.
 
+<p align="center">
+  <img src="docs/screenshots/home.png" width="32%" alt="홈 — 지금 가장 한적한 코스·스팟 추천">
+  <img src="docs/screenshots/map.png" width="32%" alt="지도 — 시간대별 혼잡도 예측 마커">
+</p>
+<p align="center"><sub>홈(지금 한적한 코스·스팟 추천) · 지도(날짜/시간 슬라이더로 혼잡도 예측)</sub></p>
+
 ## 아키텍처
 
 ```
