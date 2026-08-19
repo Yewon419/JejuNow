@@ -70,10 +70,11 @@
   ② **Vercel 프리뷰 배포 + 카카오 E2E 통과**: `npx vercel deploy`(--prod 없이, 심사본 무접촉)
   → 프리뷰 URL에서 로그인→세션(provider=kakao)→온보딩 진입 실측. 배포 번들 PKCE 검증 완료
   ③ Supabase Redirect URLs에 `https://jejunow-*-yewon419s-projects.vercel.app/**` 추가
-- ⚠ **Supabase URL 설정 현황(v1.1 프로덕션 배포 시 사람 단계)**: Site URL이
-  `http://localhost:3000`(state 만료 시 여기로 폴백됨). v1.1을 프로덕션에 배포할 때
-  **Site URL → `https://jejunow.vercel.app` 변경 + Redirect URLs에
-  `https://jejunow.vercel.app/**` 추가** 필수
+- ✅ **Supabase URL 설정 완료(2026-08-19, 크롬 자동화)**: Site URL →
+  `https://jejunow.vercel.app` 변경 + Redirect URLs에 `https://jejunow.vercel.app/**` 추가
+  (프리뷰 와일드카드와 합쳐 2건). ⚠ 부작용: localhost가 목록에 없어 **로컬 dev 서버에서
+  카카오 로그인 불가**(redirectTo가 허용 목록 밖 → Site URL=프로덕션으로 리다이렉트).
+  로컬 로그인 테스트가 필요해지면 Redirect URLs에 `http://localhost:3000/**` 추가
 - **Phase 3 잔여**: TestFlight 실기기 검증(웹뷰 내 카카오 로그인 + 카카오톡 앱 전환 동작) —
   ASC에 심사용 무계정 빌드 대기 중이라 **심사 통과 후 권장**
 - ✅ **Phase 4 코드분 완료(2026-08-19, 커밋 `8b3e6d4`)**: ① `/privacy` 개정(카카오 수집
@@ -83,8 +84,10 @@
   + 설정 「계정 삭제」 2단계 인라인 확인(웹뷰 alert 금지) + `jejunow:*` 로컬 데이터 정리.
   검증 = 테스트 사용자 생성→로그인→삭제→404 실측 + Playwright E2E(세션 주입→설정→삭제→
   게이트 복귀·localStorage 완전 정리). eslint·tsc·build 전부 통과
-- ⚠ **v1.1 배포 시 Vercel env에 `SUPABASE_SERVICE_ROLE_KEY` 추가 필수**(서버 전용, 값은
-  `_keys\JejuNow\.env`) — 없으면 탈퇴 API가 500. 로컬은 `app/.env.local`에 넣어둠(gitignored)
+- ✅ **Vercel env `SUPABASE_SERVICE_ROLE_KEY` Production 등록 완료(2026-08-19)** — CLI
+  stdin(`cmd /c` 경유). Preview 환경 추가는 권한 분류기가 차단해 미등록 — 프리뷰 배포에서
+  탈퇴 API를 테스트하려면 `npx vercel env add SUPABASE_SERVICE_ROLE_KEY preview` 직접 실행.
+  로컬은 `app/.env.local`에 있음(gitignored)
 - **Phase 4 잔여(v1.1 제출 시 사람 단계)**: ASC App Privacy 갱신(식별자 수집으로 변경)
 
 ## 현재 단계 (2026-07-11, 설계 v2 전체 반영 종료 — 필수 단계 없음)
