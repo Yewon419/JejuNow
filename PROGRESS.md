@@ -76,7 +76,16 @@
   `https://jejunow.vercel.app/**` 추가** 필수
 - **Phase 3 잔여**: TestFlight 실기기 검증(웹뷰 내 카카오 로그인 + 카카오톡 앱 전환 동작) —
   ASC에 심사용 무계정 빌드 대기 중이라 **심사 통과 후 권장**
-- **Phase 4(v1.1 제출 시)**: App Privacy 갱신·개인정보 처리방침 개정·수집 동의 화면
+- ✅ **Phase 4 코드분 완료(2026-08-19, 커밋 `8b3e6d4`)**: ① `/privacy` 개정(카카오 수집
+  항목·Supabase 보관·탈퇴 시 파기·아동 조항) ② 로그인 화면 동의 고지+처리방침 링크
+  ③ **계정 삭제(탈퇴)** — Apple 5.1.1(v) 요건으로 필수인데 기존 Phase 4 목록에 없어 추가.
+  `/api/account/delete`(본인 access token 검증 → service_role admin 삭제, 범용 프록시 차단)
+  + 설정 「계정 삭제」 2단계 인라인 확인(웹뷰 alert 금지) + `jejunow:*` 로컬 데이터 정리.
+  검증 = 테스트 사용자 생성→로그인→삭제→404 실측 + Playwright E2E(세션 주입→설정→삭제→
+  게이트 복귀·localStorage 완전 정리). eslint·tsc·build 전부 통과
+- ⚠ **v1.1 배포 시 Vercel env에 `SUPABASE_SERVICE_ROLE_KEY` 추가 필수**(서버 전용, 값은
+  `_keys\JejuNow\.env`) — 없으면 탈퇴 API가 500. 로컬은 `app/.env.local`에 넣어둠(gitignored)
+- **Phase 4 잔여(v1.1 제출 시 사람 단계)**: ASC App Privacy 갱신(식별자 수집으로 변경)
 
 ## 현재 단계 (2026-07-11, 설계 v2 전체 반영 종료 — 필수 단계 없음)
 
