@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SettingsActions } from "@/components/SettingsActions";
-import { ViewportDebug } from "@/components/ViewportDebug";
 
 export const metadata: Metadata = {
   title: "설정 — JejuNow",
@@ -64,7 +63,6 @@ export default function SettingsPage() {
         <br />
         2026 관광데이터 활용 공모전 출품작입니다.
       </p>
-      <ViewportDebug />
     </main>
   );
 }
