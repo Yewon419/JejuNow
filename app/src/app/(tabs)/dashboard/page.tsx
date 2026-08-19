@@ -72,7 +72,7 @@ export default async function DashboardPage() {
       <CoachMark id="dashboard" steps={DASHBOARD_COACH} />
       {/* 시간대 그라데이션 히어로 밴드 — 상태바 영역까지 차오르고 bg로 자연스럽게 사라진다 */}
       <div
-        className={`relative -mx-5 overflow-hidden px-5 pb-4 pt-[calc(3rem+env(safe-area-inset-top,0px))] ${HERO_GRADIENT[dayPart]}`}
+        className={`relative -mx-5 overflow-hidden px-5 pb-4 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] ${HERO_GRADIENT[dayPart]}`}
       >
       <header className="relative">
         {/* 브랜드 행: 좌측 로고 락업, 우측 날씨·설정 */}

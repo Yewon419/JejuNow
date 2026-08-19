@@ -303,7 +303,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-full space-y-6 px-5 pt-[calc(3rem+env(safe-area-inset-top,0px))] md:max-w-2xl">
+    <main className="mx-auto w-full max-w-full space-y-6 px-5 pt-[calc(0.75rem+env(safe-area-inset-top,0px))] md:max-w-2xl">
       <CoachMark id="schedule" steps={SCHEDULE_COACH} />
       <header className="space-y-3">
         {/* 제목 + 컴팩트 날짜 pill (탭하면 네이티브 날짜 선택) */}
