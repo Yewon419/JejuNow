@@ -22,6 +22,7 @@ import {
   type Transport,
 } from "@/lib/autoplan";
 import { haversineKm } from "@/lib/alternatives";
+import { getCurrentPosition } from "@/lib/geo";
 import {
   HORIZON_END,
   HORIZON_START,
@@ -268,13 +269,8 @@ export function AutoPlanFlow({
     // eslint-disable-next-line react-hooks/purity
     seedRef.current = Date.now() % 2147483647;
     setStep("locating");
-    if (!navigator.geolocation) {
-      setStep("region");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
+    getCurrentPosition(
+      ({ lat, lng }) => {
         const inJeju =
           lat >= JEJU_BBOX.minLat &&
           lat <= JEJU_BBOX.maxLat &&

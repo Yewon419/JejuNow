@@ -17,6 +17,7 @@ import {
   cleanHours,
   spotDisplayName,
 } from "@/lib/constants";
+import { getCurrentPosition } from "@/lib/geo";
 import type { KakaoCustomOverlay, KakaoMapObj } from "@/lib/kakao";
 import { fetchCongestionClient, fetchSpotDayClient } from "@/lib/supabaseClient";
 import type { Congestion, Spot } from "@/lib/types";
@@ -396,10 +397,9 @@ export function MapView({
     tapLight();
     const kakao = window.kakao;
     const map = mapRef.current;
-    if (!navigator.geolocation || !kakao || !map) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
+    if (!kakao || !map) return;
+    getCurrentPosition(
+      ({ lat, lng }) => {
         const inJeju =
           lat >= JEJU_BBOX.minLat &&
           lat <= JEJU_BBOX.maxLat &&

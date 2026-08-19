@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { getCurrentPosition } from "@/lib/geo";
 import { tapMedium } from "@/lib/haptics";
 
 // 즉흥 여행자 2단계 — 위치를 왜 쓰는지 먼저 알리고 권한을 요청한다.
@@ -16,14 +17,10 @@ export function OnboardingSpontaneous() {
 
   function allow() {
     tapMedium();
-    if (!navigator.geolocation) {
-      go();
-      return;
-    }
     setAsking(true);
-    navigator.geolocation.getCurrentPosition(
+    getCurrentPosition(
       () => go(),
-      () => go(), // 거부해도 그대로 진행 — 일정·전역 기준으로 추천한다
+      () => go(), // 거부·미지원이어도 그대로 진행 — 일정·전역 기준으로 추천한다
       { timeout: 8000, maximumAge: 300_000 },
     );
   }

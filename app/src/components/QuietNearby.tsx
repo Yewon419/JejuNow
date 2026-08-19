@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { haversineKm } from "@/lib/alternatives";
 import { catLabel, spotDisplayName } from "@/lib/constants";
+import { getCurrentPosition } from "@/lib/geo";
 import { currentPlan } from "@/lib/scheduleStore";
 import { FeatureCourseCard } from "./FeatureCourseCard";
 import { LevelBadge } from "./LevelBadge";
@@ -44,24 +45,21 @@ export function QuietNearby({
       }
     });
     // 2차(우선): 현위치 — 제주 안일 때만 채택
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (cancelled) return;
-          const { latitude: lat, longitude: lng } = pos.coords;
-          const inJeju =
-            lat >= JEJU_BBOX.minLat &&
-            lat <= JEJU_BBOX.maxLat &&
-            lng >= JEJU_BBOX.minLng &&
-            lng <= JEJU_BBOX.maxLng;
-          if (inJeju) setOrigin({ lat, lng, label: "내 위치 근처" });
-        },
-        () => {
-          // 권한 거부·실패 — 일정/전역 기준 유지
-        },
-        { timeout: 5000, maximumAge: 300_000 },
-      );
-    }
+    getCurrentPosition(
+      ({ lat, lng }) => {
+        if (cancelled) return;
+        const inJeju =
+          lat >= JEJU_BBOX.minLat &&
+          lat <= JEJU_BBOX.maxLat &&
+          lng >= JEJU_BBOX.minLng &&
+          lng <= JEJU_BBOX.maxLng;
+        if (inJeju) setOrigin({ lat, lng, label: "내 위치 근처" });
+      },
+      () => {
+        // 권한 거부·실패 — 일정/전역 기준 유지
+      },
+      { timeout: 5000, maximumAge: 300_000 },
+    );
     return () => {
       cancelled = true;
     };

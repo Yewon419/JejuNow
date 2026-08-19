@@ -78,13 +78,14 @@ export default async function DashboardPage() {
         {/* 브랜드 행: 좌측 로고 락업, 우측 날씨·설정 */}
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-2">
+            {/* 앱 아이콘과 동일 이미지 (베타 피드백 2026-08-19) — 아이콘 여백이 커서 28px보다 한 단계 키움 */}
             <Image
-              src="/icon.svg"
+              src="/app-icon.png"
               alt=""
-              width={28}
-              height={28}
+              width={32}
+              height={32}
               unoptimized
-              className="rounded-lg"
+              className="rounded-lg border border-line/60"
             />
             <span className="text-lg font-extrabold tracking-tight text-ink">JejuNow</span>
           </span>
