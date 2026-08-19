@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { signInWithProvider, type AuthProviderId } from "@/lib/authClient";
 import { tapMedium } from "@/lib/haptics";
@@ -60,7 +61,15 @@ export function LoginScreen() {
           </p>
         )}
 
-        <p className="pt-4 text-center text-xs text-dim/80">로그인해야 서비스를 이용할 수 있어요</p>
+        <p className="pt-4 text-center text-xs leading-relaxed text-dim/80">
+          로그인해야 서비스를 이용할 수 있어요.
+          <br />
+          시작하면{" "}
+          <Link href="/privacy" className="underline">
+            개인정보 처리방침
+          </Link>
+          에 동의하는 것으로 봅니다.
+        </p>
       </section>
     </main>
   );

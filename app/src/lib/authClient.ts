@@ -47,3 +47,22 @@ export async function signOut(): Promise<void> {
   const { error } = await getSupabase().auth.signOut();
   if (error) throw error;
 }
+
+// 탈퇴 — 서버(/api/account/delete)가 service_role로 본인 계정을 삭제한다.
+export async function deleteAccount(): Promise<void> {
+  const { data, error: sessionError } = await getSupabase().auth.getSession();
+  if (sessionError) throw sessionError;
+  const token = data.session?.access_token;
+  if (!token) throw new Error("세션 없음");
+
+  const res = await fetch("/api/account/delete", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`계정 삭제 실패 ${res.status}: ${body.slice(0, 200)}`);
+  }
+  // 사용자는 이미 서버에서 삭제됨 — auth-js signOut은 401/404를 무시하고 로컬 세션을 지운다.
+  await signOut();
+}
