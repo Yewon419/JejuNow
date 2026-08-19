@@ -3,6 +3,21 @@
 > 재부팅/새 세션 시 이 파일부터 읽으면 이어서 진행 가능.
 > 설계 = `BUILD_PLAN.md` + **설계 v2(2026-07-10, 아래)**. 자율 구현 지시서 = `FABLE_TASKS.md`.
 
+## 베타 피드백 수정 (2026-08-19, master, 커밋 b272fd0)
+
+- **위치 이중 팝업 제거**: 앱 권한 외에 WKWebView가 origin("jejunow.vercel.app") 위치
+  권한을 또 묻던 문제. `@capacitor/geolocation` 도입 + `lib/geo.ts` 단일 창구 —
+  네이티브는 CLLocationManager 직행(웹뷰 팝업 자체가 없음), 웹은 기존
+  navigator.geolocation 폴백. 호출부 4곳(QuietNearby·MapView·AutoPlanFlow·
+  OnboardingSpontaneous) 교체. ⚠ WKWebView origin 팝업은 공개 API로 억제 불가 —
+  네이티브 플러그인이 유일 경로. 플러그인 등록은 CI의 `cap sync ios`가 처리(재빌드 필수)
+- **홈 좌상단 로고 = 앱 아이콘**: AppIcon 1024px → `/app-icon.png`(112px) 리사이즈,
+  대시보드 헤더 icon.svg 교체(32px, line 보더)
+- 검증: eslint·tsc·build 통과 + Playwright 실측(웹 폴백 — 제주 좌표 모의 시
+  "내 위치 근처" 라벨 표시, 헤더 아이콘 렌더). 네이티브 팝업 소멸은 TestFlight 실기기 확인 필요
+- 배포: Vercel 프로덕션 반영 + iOS 빌드 트리거(run 32247415209). ⚠ 구 빌드(20)에
+  새 웹이 실리면 네이티브 위치가 에러 폴백으로 빠짐 — 새 TestFlight 빌드 설치 후 확인
+
 ## ⏭️ 다음 세션 재개점 — 계정 시스템 v1.1 (2026-07-25 중단, 코드 뼈대부터)
 
 **"제주나우 이어서" 하면 여기부터. `git checkout feature/auth-v1_1` 후 Phase 2 착수.**
