@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SettingsActions } from "@/components/SettingsActions";
 
 export const metadata: Metadata = {
-  title: "설정 — JejuNow",
+  title: "설정 — 제주나우",
 };
 
 export default function SettingsPage() {
@@ -59,7 +59,7 @@ export default function SettingsPage() {
       </section>
 
       <p className="mt-8 text-center text-xs leading-relaxed text-dim/80">
-        JejuNow {process.env.NEXT_PUBLIC_APP_VERSION}
+        제주나우 {process.env.NEXT_PUBLIC_APP_VERSION}
         <br />
         2026 관광데이터 활용 공모전 출품작입니다.
       </p>

@@ -4,7 +4,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 // 배포 후 server.url을 실제 도메인으로 갱신할 것. (Phase 5)
 const config: CapacitorConfig = {
   appId: "com.jejunow.app",
-  appName: "JejuNow",
+  appName: "제주나우",
   webDir: "public",
   server: {
     url: "https://jejunow.vercel.app",

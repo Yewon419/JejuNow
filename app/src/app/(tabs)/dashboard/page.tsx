@@ -87,7 +87,7 @@ export default async function DashboardPage() {
               unoptimized
               className="rounded-lg border border-line/60"
             />
-            <span className="text-lg font-extrabold tracking-tight text-ink">JejuNow</span>
+            <span className="text-lg font-extrabold tracking-tight text-ink">제주나우</span>
           </span>
           <div className="flex items-center gap-2">
         {weather?.avg_temp != null ? (

@@ -3,6 +3,15 @@
 > 재부팅/새 세션 시 이 파일부터 읽으면 이어서 진행 가능.
 > 설계 = `BUILD_PLAN.md` + **설계 v2(2026-07-10, 아래)**. 자율 구현 지시서 = `FABLE_TASKS.md`.
 
+## 앱 이름 한글화 (2026-08-20, master): JejuNow → 제주나우
+
+- 범위(대표님 확정): 설치 이름 + 앱 내 표기 전부 + App Store 이름
+- 설치: Info.plist CFBundleDisplayName · capacitor.config.ts/json appName · PWA manifest
+- 앱 내: 대시보드 헤더 워드마크·로딩 워드마크(JEJU NOW 3곳)·페이지 타이틀 5곳·설정 버전
+  표기·처리방침 본문. globals.css 주석만 유지
+- **ASC 등록 이름 API로 변경 완료**(appInfoLocalizations PATCH, ko) — 부제·URL 불변.
+  LISTING.md 갱신. 홈 화면 이름은 다음 TestFlight 빌드부터 반영(재빌드 필요)
+
 ## 베타 피드백 수정 3차 (2026-08-20, master)
 
 - **오토플랜 도보 여정인데 경로 시간이 자동차 기준**: Journey에 `transport` 저장(오토플랜

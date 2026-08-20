@@ -6,7 +6,7 @@ export default function OnboardingPage() {
     <OnboardingGate>
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col px-6 py-12">
       <header className="pt-8">
-        <p className="text-sm font-bold tracking-widest text-primary">JEJU NOW</p>
+        <p className="text-sm font-bold tracking-widest text-primary">제주나우</p>
         <h1 className="mt-3 text-3xl font-bold leading-snug text-ink">
           어떤
           <br />

@@ -14,7 +14,7 @@ const serifKr = Noto_Serif_KR({
 });
 
 export const metadata: Metadata = {
-  title: "JejuNow — 한적한 제주를 찾아서",
+  title: "제주나우 — 한적한 제주를 찾아서",
   description:
     "제주 관광지 혼잡도 예측과 대안 코스 추천. 데이터랩 수요 데이터 기반 — 지금 어디가 한적할까?",
 };

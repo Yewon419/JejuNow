@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "자주 묻는 질문 — JejuNow",
+  title: "자주 묻는 질문 — 제주나우",
 };
 
 const FAQ: { q: string; a: string }[] = [

@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "개인정보 처리방침 — JejuNow",
-  description: "JejuNow가 처리하는 정보와 처리 방식을 안내합니다.",
+  title: "개인정보 처리방침 — 제주나우",
+  description: "제주나우가 처리하는 정보와 처리 방식을 안내합니다.",
 };
 
 const UPDATED = "2026년 7월 20일";
@@ -12,7 +12,7 @@ export default function PrivacyPage() {
   return (
     <main className="min-h-dvh bg-bg px-5 py-8">
       <Link href="/dashboard" className="text-sm text-primary">
-        ← JejuNow
+        ← 제주나우
       </Link>
 
       <h1 className="mt-4 text-2xl font-bold text-ink">개인정보 처리방침</h1>
@@ -21,7 +21,7 @@ export default function PrivacyPage() {
       <section className="mt-7">
         <h2 className="text-base font-semibold text-ink">1. 수집하지 않는 정보</h2>
         <p className="mt-2 text-sm leading-relaxed text-ink">
-          JejuNow는 회원가입이나 로그인이 없습니다. 이름, 이메일, 전화번호, 생년월일 등
+          제주나우는 회원가입이나 로그인이 없습니다. 이름, 이메일, 전화번호, 생년월일 등
           이용자를 식별할 수 있는 정보를 일절 수집하지 않으며, 광고 식별자나 추적 도구도
           사용하지 않습니다.
         </p>
@@ -61,7 +61,7 @@ export default function PrivacyPage() {
       <section className="mt-7">
         <h2 className="text-base font-semibold text-ink">5. 아동의 개인정보</h2>
         <p className="mt-2 text-sm leading-relaxed text-ink">
-          JejuNow는 개인정보를 수집하지 않으므로 아동으로부터 수집되는 정보 또한
+          제주나우는 개인정보를 수집하지 않으므로 아동으로부터 수집되는 정보 또한
           없습니다.
         </p>
       </section>
@@ -86,7 +86,7 @@ export default function PrivacyPage() {
       </section>
 
       <p className="mt-10 pb-4 text-xs text-dim">
-        JejuNow는 2026 관광데이터 활용 공모전 출품작입니다. 혼잡도는 공개 통계를 기반으로 한
+        제주나우는 2026 관광데이터 활용 공모전 출품작입니다. 혼잡도는 공개 통계를 기반으로 한
         예측값이며 실제 현장 상황과 다를 수 있습니다.
       </p>
     </main>

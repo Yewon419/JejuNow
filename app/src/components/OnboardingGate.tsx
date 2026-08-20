@@ -38,7 +38,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
   if (!decided) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-bg">
-        <p className="text-sm font-bold tracking-widest text-primary">JEJU NOW</p>
+        <p className="text-sm font-bold tracking-widest text-primary">제주나우</p>
       </main>
     );
   }

@@ -1,4 +1,4 @@
-# App Store 등록정보 (JejuNow)
+# App Store 등록정보 (제주나우)
 
 App ID 6792661866 / 번들 ID `com.jejunow.app` / SKU `jejunow` / 기본 언어 한국어
 
@@ -7,8 +7,9 @@ App ID 6792661866 / 번들 ID `com.jejunow.app` / SKU `jejunow` / 기본 언어 
 
 ## 이름 (30자 이내)
 ```
-JejuNow
+제주나우
 ```
+(2026-08-20 ASC 반영 완료 — JejuNow에서 변경)
 
 ## 부제 (30자 이내)
 ```

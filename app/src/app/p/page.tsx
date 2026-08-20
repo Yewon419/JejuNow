@@ -18,7 +18,7 @@ export default async function SharedPlanPage({
   if (!shared) {
     return (
       <main className="mx-auto flex min-h-dvh max-w-xl flex-col items-center justify-center px-6 text-center">
-        <p className="text-sm font-bold tracking-widest text-primary">JEJU NOW</p>
+        <p className="text-sm font-bold tracking-widest text-primary">제주나우</p>
         <h1 className="mt-3 text-xl font-bold text-ink">계획을 불러올 수 없어요</h1>
         <p className="mt-2 text-sm leading-relaxed text-dim">
           링크가 잘못되었거나 손상됐어요. 보낸 사람에게 다시 받아 주세요.
@@ -40,7 +40,7 @@ export default async function SharedPlanPage({
   return (
     <main className="mx-auto w-full max-w-full space-y-6 px-5 pt-[calc(3rem+env(safe-area-inset-top,0px))] pb-10 md:max-w-2xl">
       <header>
-        <p className="text-sm font-bold tracking-widest text-primary">JEJU NOW</p>
+        <p className="text-sm font-bold tracking-widest text-primary">제주나우</p>
         <h1 className="mt-2 text-2xl font-bold text-ink">{shared.name}</h1>
         <p className="mt-1 text-sm text-dim">
           {formatKstDate(shared.date)} · {items.length}곳
