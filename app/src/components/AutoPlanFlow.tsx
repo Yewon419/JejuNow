@@ -106,7 +106,7 @@ function CandidateCard({ cand, onPick }: { cand: Candidate; onPick: () => void }
           src={cand.spot.image_url}
           alt=""
           fill
-          sizes="(max-width: 640px) 50vw, 288px"
+          sizes="(max-width: 640px) 100vw, 576px"
           className="object-cover photo-warm"
           unoptimized={cand.spot.image_url.endsWith(".bmp")}
         />
@@ -325,6 +325,7 @@ export function AutoPlanFlow({
         plan.end && endLabel !== null
           ? { lat: plan.end.lat, lng: plan.end.lng, label: endLabel }
           : null,
+      transport: plan.prefs.transport,
     };
     onApply(plan.date, toScheduleSlots(plan), journey);
     onClose();
@@ -585,7 +586,8 @@ export function AutoPlanFlow({
             </p>
             {offer ? (
               <>
-                <div className={offer.b ? "grid grid-cols-2 gap-3" : ""}>
+                {/* 세로 배치 — 가로 2열은 하단 공백이 커서 위아래로 (베타 피드백) */}
+                <div className="space-y-3">
                   <CandidateCard cand={offer.a} onPick={() => pick("a")} />
                   {offer.b ? <CandidateCard cand={offer.b} onPick={() => pick("b")} /> : null}
                 </div>

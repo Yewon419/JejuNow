@@ -51,6 +51,7 @@ export type JourneyPoint = {
 export type Journey = {
   origin: JourneyPoint;
   end: JourneyPoint | null; // 여정 끝 "정하지 않음"이면 null
+  transport?: "car" | "transit" | "walk"; // 오토플랜 이동수단 — 없으면 자동차(기존 데이터)
 };
 
 export type Schedule = {

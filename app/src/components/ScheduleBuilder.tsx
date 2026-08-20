@@ -71,6 +71,8 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
   const date = current?.date ?? todayInHorizon();
   const slots = current?.slots ?? EMPTY_SLOTS;
   const journey = current?.journey ?? null;
+  // 오토플랜 이동수단 — 도보·대중교통 여정에 자동차 경로 시간을 보여주면 오해를 부른다
+  const transport = journey?.transport ?? "car";
   // 날짜 안에 시안 — 상위는 날짜, 그 아래 이 날짜에 속한 시안들
   const dailyPlans = store.plans.filter((p) => p.date === date);
 
@@ -218,8 +220,9 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
     };
   }, [date, slots, spotById]);
 
-  // 연속 슬롯 쌍의 경로 메타 로드 (슬롯 변경 시)
+  // 연속 슬롯 쌍의 경로 메타 로드 (슬롯 변경 시) — 자동차 여정만(카카오내비가 자동차 전용)
   useEffect(() => {
+    if (transport !== "car") return;
     let cancelled = false;
     const pairs: [Spot, Spot][] = [];
     for (let i = 1; i < slots.length; i += 1) {
@@ -245,7 +248,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
     return () => {
       cancelled = true;
     };
-  }, [slots, spotById]);
+  }, [slots, spotById, transport]);
 
   // 추가 위치 바로 위 슬롯의 스팟 — 선택 시트를 이 스팟과 가까운 순으로 정렬(동선 이어붙이기)
   const pickerRefSpot = useMemo(() => {
@@ -468,6 +471,22 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
           const showRoute = prevSpot ? !sameLocation(prevSpot, spot) : false;
           const meta =
             showRoute && prevSpot ? routeMeta.get(`${prevSpot.spot_id}:${spot.spot_id}`) : undefined;
+          // 경로 칩 표기 — 도보는 직선×1.3 보정(RouteView 도보 탭과 동일 식),
+          // 대중교통은 시간 추정 불가라 직선거리만, 자동차는 카카오내비 실경로
+          let routeLabel: string | null = null;
+          if (showRoute && prevSpot) {
+            if (transport === "walk") {
+              const footKm =
+                Math.round(haversineKm(prevSpot.lat, prevSpot.lng, spot.lat, spot.lng) * 1.3 * 10) / 10;
+              const footMin = Math.max(1, Math.round((footKm / 4) * 60));
+              routeLabel = `${footKm.toFixed(1)}km · 도보 약 ${formatDuration(footMin * 60)}`;
+            } else if (transport === "transit") {
+              const km = Math.round(haversineKm(prevSpot.lat, prevSpot.lng, spot.lat, spot.lng) * 10) / 10;
+              routeLabel = `직선 ${km.toFixed(1)}km`;
+            } else if (meta) {
+              routeLabel = `${(meta.distance_m / 1000).toFixed(1)}km · 약 ${formatDuration(meta.duration_s)}`;
+            }
+          }
           return (
             <li key={slot.hour} className="relative">
               {showRoute && prevSpot ? (
@@ -481,10 +500,8 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
                   </svg>
                   경로 보기
-                  {meta ? (
-                    <span className="font-medium text-dim">
-                      · {(meta.distance_m / 1000).toFixed(1)}km · 약 {formatDuration(meta.duration_s)}
-                    </span>
+                  {routeLabel ? (
+                    <span className="font-medium text-dim">· {routeLabel}</span>
                   ) : null}
                 </button>
               ) : null}
@@ -706,6 +723,7 @@ export function ScheduleBuilder({ spots }: { spots: Spot[] }) {
         <RouteView
           from={routeView.from}
           to={routeView.to}
+          initialMode={transport === "walk" ? "foot" : transport === "transit" ? "transit" : "car"}
           onClose={() => setRouteView(null)}
         />
       ) : null}

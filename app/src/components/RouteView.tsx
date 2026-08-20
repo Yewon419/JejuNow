@@ -60,15 +60,18 @@ export function RouteView({
   from,
   to,
   onClose,
+  initialMode = "car",
 }: {
   from: Spot;
   to: Spot;
   onClose: () => void;
+  /** 여정 이동수단에 맞춰 시작 탭 지정 — 도보 여정이 자동차 시간으로 열리는 오해 방지 */
+  initialMode?: TravelMode;
 }) {
   const [status, setStatus] = useState<Status>("loading");
   const [route, setRoute] = useState<RouteData | null>(null);
   const [failReason, setFailReason] = useState<FailReason>("error");
-  const [mode, setMode] = useState<TravelMode>("car");
+  const [mode, setMode] = useState<TravelMode>(initialMode);
   const containerRef = useRef<HTMLDivElement>(null);
   // 경로 실패 시 참고용 직선거리(좌표만으로 계산 — 서버 무관)
   const straightKm = haversineKm(from.lat, from.lng, to.lat, to.lng);

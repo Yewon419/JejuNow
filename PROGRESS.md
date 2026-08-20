@@ -3,6 +3,16 @@
 > 재부팅/새 세션 시 이 파일부터 읽으면 이어서 진행 가능.
 > 설계 = `BUILD_PLAN.md` + **설계 v2(2026-07-10, 아래)**. 자율 구현 지시서 = `FABLE_TASKS.md`.
 
+## 베타 피드백 수정 3차 (2026-08-20, master)
+
+- **오토플랜 도보 여정인데 경로 시간이 자동차 기준**: Journey에 `transport` 저장(오토플랜
+  이동수단) → 일정 타임라인 경로 칩이 도보=직선×1.3·4km/h(RouteView 도보 탭과 동일 식),
+  대중교통=직선거리만, 자동차=기존 카카오내비. RouteView도 `initialMode`로 여정 이동수단
+  탭으로 열림. 자동차 아닌 여정은 카카오내비 프리페치 생략. 공유 링크 sanitize에 transport 보존
+- **오토플랜 2지선다 하단 공백**: 선택지 카드 가로 2열 → 세로(위아래) 전폭 배치
+- 검증: eslint·tsc·build + Playwright webkit 실측(도보 칩 "8.4km · 도보 약 2시간 6분",
+  RouteView 도보 탭 오픈, 세로 카드 렌더). 웹 전용 — iOS 재빌드 불필요, Vercel 배포만
+
 ## 베타 피드백 수정 (2026-08-19, master, 커밋 b272fd0)
 
 - **위치 이중 팝업 제거**: 앱 권한 외에 WKWebView가 origin("jejunow.vercel.app") 위치

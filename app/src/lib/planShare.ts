@@ -53,7 +53,11 @@ function sanitizeJourney(v: unknown): Journey | null {
   const j = v as Journey;
   if (!isJourneyPoint(j.origin)) return null;
   const end = j.end == null ? null : isJourneyPoint(j.end) ? j.end : null;
-  return { origin: j.origin, end };
+  const transport =
+    j.transport === "car" || j.transport === "transit" || j.transport === "walk"
+      ? j.transport
+      : undefined;
+  return { origin: j.origin, end, ...(transport ? { transport } : {}) };
 }
 
 export function decodePlan(param: string): SharedPlan | null {
