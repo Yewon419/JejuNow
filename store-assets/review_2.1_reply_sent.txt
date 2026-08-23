@@ -1,0 +1,35 @@
+Hello,
+
+All requested information is below, and has also been added to the Notes field of App Review Information.
+
+1. SCREEN RECORDING
+Attached, captured on a physical iPhone running the latest iOS. It begins by launching the app from the Home Screen and covers the full flow: onboarding, Home, spot detail with its hourly chart and quieter alternatives, adding a spot to the itinerary, the Map tab with its hour slider, the optional location prompt, the in-app driving route, auto-plan, and Settings. The app has no accounts at all, so there are no registration, login, or deletion flows. There is no paid content, no in-app purchase, and no user-generated content, so no purchase, subscription, reporting, or blocking flows exist. Location is the only sensitive permission and its prompt appears in the recording.
+
+2. DEVICES AND OS TESTED
+All features were tested on:
+- iPhone 16 (iPhone16,1), iOS 26.6
+- iPad Pro 11-inch (iPad14,3), iPadOS 26.6
+
+3. FUNCTION, PROBLEM SOLVED, TARGET AUDIENCE
+Visitors to Jeju Island in Korea concentrate on the same few famous spots, creating severe crowding while comparable places a short drive away stay empty. JejuNow predicts, hour by hour, how crowded each of 800+ Jeju tourist spots will be, so a visitor can shift to a quieter hour at the same place or switch to a similar but quieter place nearby. It also checks a planned itinerary slot by slot and proposes alternatives for crowded slots. Audience: travelers visiting Jeju and regional tourism planners. The app is an entry for the 2026 Korea Tourism Data Utilization Contest (app development category).
+
+4. SETUP AND ACCESS
+No setup or credentials are required: the app has no sign-up or login and needs no sample files. After one onboarding question about travel style, every feature is open: Home (crowded spots to avoid, quiet ones to consider), Map (spots colored by predicted crowding, with an hour slider showing how a place changes across the day), Spot detail (hourly chart, quieter alternatives, "Add to plan"), Plan (crowding per slot, alternatives for crowded slots, in-app driving route), Auto-plan (four preference questions, then repeated two-choice picks that build a day itinerary respecting travel time), and Settings. Location is optional: requested only when a location-based feature is tapped, and if denied every feature still works with a region-wide fallback.
+
+5. EXTERNAL SERVICES
+- Korea Tourism Organization TourAPI 4.0 (data.go.kr): spot names, categories, photos, addresses, opening hours. Open government data; our key is approved.
+- Korea Tourism Data Lab: public search-popularity statistics, used only to train our model.
+- Kakao Maps JavaScript SDK (maps), Kakao Local REST API (place search, parking coordinates), Kakao Navi Directions API (driving routes), under Kakao Developers terms.
+- Supabase (PostgreSQL) for data, Vercel for hosting and serverless functions, Render for our FastAPI inference server.
+- Predictions come from our own LightGBM model trained on the statistics above. No third-party AI, authentication, payment, or advertising service is used.
+
+6. REGIONAL DIFFERENCES
+None. The app functions consistently across all regions. The interface is Korean and the data covers Jeju Island, but no feature or content is gated by country or region.
+
+7. REGULATED INDUSTRY / THIRD-PARTY MATERIAL
+Not a regulated industry: no medical, financial, legal, or gambling services. All tourism content comes from the Korea Tourism Organization via TourAPI under Korea's Public Data Act open-data license, which permits redistribution with attribution; the app credits KTO on its FAQ screen. Map data is served through Kakao's official SDK under Kakao Developers terms. We can provide the data.go.kr key issuance record and Kakao Developers registration on request.
+
+Crowding figures are model predictions from public statistics, not real-time headcounts. The app says so on the FAQ screen and marks estimated values with an "estimate" badge.
+
+Best regards,
+Yewon Han

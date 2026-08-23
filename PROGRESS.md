@@ -3,7 +3,26 @@
 > 재부팅/새 세션 시 이 파일부터 읽으면 이어서 진행 가능.
 > 설계 = `BUILD_PLAN.md` + **설계 v2(2026-07-10, 아래)**. 자율 구현 지시서 = `FABLE_TASKS.md`.
 
-## 🍎 App Store 심사 제출 완료 (2026-08-20 15:47 KST) — 상태 「1.0 심사 대기 중」
+## 🍎 심사 2.1 정보 요청 → 회신 완료 (2026-08-23 21:02 KST)
+
+- **리젝이 아니라 정보 요청**(Guideline 2.1, Information Needed - New App Submission).
+  앱 결함 지적 0건 — 시연 영상과 앱 설명을 달라는 요구. 코드 수정·재빌드·재제출 불필요
+  (ASC의 「앱 심사에 다시 제출」 버튼도 비활성. 회신하면 같은 제출 건에서 심사 재개)
+- **처리 완료**: ① 심사 노트(App Review Information > Notes)를 7항목 답변으로 API 갱신
+  (appStoreReviewDetails PATCH, **4000자 제한**) ② Resolution Center 회신 등록 —
+  본문 정확히 4000자(회신란도 4000자 제한) + **시연 영상 첨부**
+- 답변 7항목: 계정 없음(데모 계정 불필요·구매/UGC 흐름 없음) / 테스트 기기(iPhone 16
+  iOS 26.6, iPad Pro 11" iPadOS 26.6) / 목적·대상 / 사용법 / 외부 서비스(TourAPI·데이터랩·
+  카카오 3종·Supabase·Vercel·Render, 자체 LightGBM — 서드파티 AI·인증·결제·광고 0) /
+  지역 차이 없음 / 규제 산업 아님·TourAPI 공공데이터 라이선스. 문안 SSOT =
+  `store-assets/REVIEW_2.1_RESPONSE.md`
+- ⚠ **영상 첨부 함정 2건**: 원본 14.5MB(HEVC 60fps)가 브라우저 브릿지 10MB 상한에 걸림 →
+  ffmpeg로 H.264 재인코딩(`-crf 22 -preset slow -r 30 -movflags +faststart`) 7.6MB,
+  프레임 추출로 한글 가독성 확인 후 업로드. HEVC→H.264 전환은 심사자 호환성에도 유리
+- 다음 = Apple 회신 대기(통상 48시간 이내). 상태는 ASC API로 확인 가능
+  (reviewSubmissions state / appStoreVersions appStoreState)
+
+## 🍎 App Store 심사 제출 (2026-08-20 15:47 KST) — 상태 「1.0 심사 대기 중」
 
 - **제출 구성**: 버전 1.0 + 빌드 1.0.0(22)(제주나우 이름) · 출시 = **수동**(통과해도 자동 출시
   안 됨, 공모전 일정 맞춰 출시 버튼) · 심사 최대 48시간 안내, 결과는 이메일
