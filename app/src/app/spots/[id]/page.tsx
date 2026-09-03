@@ -5,9 +5,8 @@ import { AddToScheduleButton } from "@/components/AddToScheduleButton";
 import { CoachMark } from "@/components/CoachMark";
 import { DetailDismiss } from "@/components/DetailDismiss";
 import { LevelBadge, LevelDot } from "@/components/LevelBadge";
-import { SpotInfoCard } from "@/components/SpotInfoCard";
+import { SpotLiveDetail } from "@/components/SpotLiveDetail";
 import { SpotMiniMap } from "@/components/SpotMiniMap";
-import { SpotOverview } from "@/components/SpotOverview";
 import { SpotReactions } from "@/components/SpotReactions";
 import { findAlternatives } from "@/lib/alternatives";
 import { SPOT_COACH } from "@/lib/coach";
@@ -123,14 +122,12 @@ export default async function SpotDetailPage({
       <div className="relative -mt-6 min-w-0 space-y-8 rounded-t-3xl bg-bg px-5 pt-8 lg:mt-0 lg:rounded-none lg:px-0 lg:pt-0">
         <SpotReactions spotId={spotId} />
 
-        <SpotInfoCard
+        <SpotLiveDetail
+          contentId={spot.content_id}
           hours={spot.opening_hours}
-          tel={spot.tel}
           addr={spot.addr}
-          homepage={spot.homepage}
+          initial={{ overview: spot.overview, tel: spot.tel, homepage: spot.homepage }}
         />
-
-        {spot.overview ? <SpotOverview text={spot.overview} /> : null}
 
         <section aria-labelledby="timeline-heading" data-coach="spot-chart">
           <h2 id="timeline-heading" className="mb-1 text-lg font-bold text-ink">

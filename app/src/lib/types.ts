@@ -18,6 +18,7 @@ export type Spot = {
 
 /** 상세 페이지 전용 — 목록 조회는 페이로드 절약을 위해 overview·tel·homepage를 select하지 않는다 */
 export type SpotDetail = Spot & {
+  content_id: string | null; // TourAPI contentId — 상세 실시간 조회(/api/tour-detail) 키
   overview: string | null;
   tel: string | null;
   homepage: string | null; // 공식 홈페이지(예매 안내 포함) — TourAPI 원천
