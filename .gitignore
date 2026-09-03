@@ -33,3 +33,6 @@ app/ios/App/Pods/
 # OS
 .DS_Store
 Thumbs.db
+
+# 기능설명서 슬라이드 미리보기(재생성 가능)
+docs/contest/preview/

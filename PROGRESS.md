@@ -18,8 +18,18 @@
   tsc·eslint 통과, **미커밋·미배포**) + LISTING.md 2곳. ASC 설명문에도 같은 오기 → 심사 통과 후 출시 전 갱신
 - 상태 실측: 웹 200·최신 반영 / Render 첫 호출 **콜드 21.5s**(UptimeRobot 핑 사망 의심, 대표님 확인) /
   Supabase spots 804·pred 08-31~10-14 롤링 / ASC 1.0 READY_FOR_REVIEW 빌드 25 대기
-- 사람 단계: 양식 zip 다운로드 → 콘텐츠랩 팀 정보 확인 → 운영계정 신청(선택) → 승인 시 출시 버튼 →
-  UptimeRobot 확인. 상세 = 제출준비 문서 §5
+- ✅ **02:30 결정 ②③(c) 반영·배포 완료**(커밋 e547696 + 후속): `/api/tour-detail`(detailCommon2 실시간
+  프록시, Vercel env `DATA_GO_KR_SERVICE_KEY_DECODING` 등록) + `SpotLiveDetail`(DB 값 먼저 → 원천 값 덮어쓰기,
+  실패 시 유지). 프로덕션 실측: FAQ 문구 갱신·tour-detail 200(성산일출봉 overview 수신). ⚠ 이 PC에서는
+  apis.data.go.kr TCP 타임아웃(새벽), Vercel 경유는 정상
+- ✅ **기능설명서 PDF 완성**: `docs/contest/제주나우_기능설명서.pdf`(13p, 양식 pptx 그대로 python-pptx로 채움,
+  `fill_pptx.py` → `export_pdf.ps1`(PowerPoint COM)). 캡처 = `capture_screens.js`(대표 6장) +
+  `capture_steps.js`(기능 흐름 단계 11장, Playwright webkit·iPhone 390×844@3x, 프로덕션). 미리보기 `preview/`
+  ⚠ **표지 팀명은 플레이스홀더** → 대표님이 pptx 1행 수정 후 PDF 재출력(또는 fill_pptx.py TEAM_NAME 수정 후
+  두 스크립트 재실행). ⚠ 홈·지도 캡처의 날짜·인사말은 SSR 서버 시각(새벽 캡처 → "고요한 새벽이에요")
+  → 낮에 두 스크립트 재실행하면 갱신됨(선택)
+- 사람 단계 잔여: 콘텐츠랩 팀 정보 확인·팀원 회원가입 → 운영계정 신청(선택) → UptimeRobot 복구 + cron-job.org
+  이중화 → 승인 시 출시 버튼 → 9/21 16:00 전 제출. 상세 = 제출준비 문서 §5
 
 ## 🍎 심사 2.1 정보 요청 → 회신 완료 (2026-08-23 21:02 KST)
 
