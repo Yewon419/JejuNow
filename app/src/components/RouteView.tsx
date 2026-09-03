@@ -4,6 +4,7 @@ import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type RouteData, fetchRoute, formatDuration, routeCoord } from "@/lib/api";
 import { haversineKm } from "@/lib/alternatives";
+import { openAppleMaps } from "@/lib/appleMaps";
 import { spotDisplayName } from "@/lib/constants";
 import { tapLight } from "@/lib/haptics";
 import type { Spot } from "@/lib/types";
@@ -177,6 +178,13 @@ export function RouteView({
     window.location.href = appUrl;
   }
 
+  // iOS 내장 지도 — 이동수단 탭을 그대로 넘긴다
+  function openInAppleMaps() {
+    const fc = routeCoord(from);
+    const tc = routeCoord(to);
+    openAppleMaps({ ...tc, name: spotDisplayName(to.name) }, mode, fc);
+  }
+
   const footKm = Math.round(straightKm * 1.3 * 10) / 10; // 직선 × 도로 우회 보정
   const footMin = Math.max(1, Math.round((footKm / 4) * 60)); // 4km/h
 
@@ -273,13 +281,13 @@ export function RouteView({
                     <br />
                     앱 지도에 경로를 그릴 수 없어요.
                     <br />
-                    카카오맵에서 실제 길을 확인하세요.
+                    아래 지도 앱에서 실제 길을 확인하세요.
                   </>
                 ) : (
                   <>
                     경로를 잠시 불러오지 못했어요.
                     <br />
-                    다시 시도하거나 카카오맵에서 확인하세요.
+                    다시 시도하거나 아래 지도 앱에서 확인하세요.
                   </>
                 )}
               </p>
@@ -287,7 +295,7 @@ export function RouteView({
           ) : null}
         </div>
 
-        <div className="flex items-center justify-between gap-3 px-5 py-4">
+        <div className="space-y-3 px-5 py-4">
           {mode === "car" ? (
             route ? (
               <p className="text-sm text-ink">
@@ -311,15 +319,25 @@ export function RouteView({
               <span className="text-dim"> · 직선 기반 추정</span>
             </p>
           ) : (
-            <p className="text-sm text-dim">경로·시간은 카카오맵에서 확인해요</p>
+            <p className="text-sm text-dim">경로·시간은 지도 앱에서 확인해요</p>
           )}
-          <button
-            type="button"
-            onClick={openKakaoMap}
-            className="shrink-0 cursor-pointer rounded-xl border border-line bg-card px-4 py-2.5 text-sm font-semibold text-ink"
-          >
-            카카오맵에서 열기
-          </button>
+          {/* 지도 앱 선택 — 내장 지도(Apple)와 카카오맵 중 고를 수 있어야 한다(가이드라인 4) */}
+          <div className="flex gap-2.5">
+            <button
+              type="button"
+              onClick={openInAppleMaps}
+              className="flex-1 cursor-pointer rounded-xl border border-line bg-card px-4 py-2.5 text-sm font-semibold text-ink"
+            >
+              Apple 지도
+            </button>
+            <button
+              type="button"
+              onClick={openKakaoMap}
+              className="flex-1 cursor-pointer rounded-xl border border-line bg-card px-4 py-2.5 text-sm font-semibold text-ink"
+            >
+              카카오맵
+            </button>
+          </div>
         </div>
       </div>
     </div>

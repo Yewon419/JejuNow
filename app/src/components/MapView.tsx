@@ -6,6 +6,7 @@ import Script from "next/script";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { openAppleMaps } from "@/lib/appleMaps";
 import { MAP_COACH } from "@/lib/coach";
 import {
   HORIZON_END,
@@ -674,21 +675,37 @@ export function MapView({
                 ) : null}
               </div>
 
-              <div className="mt-4 flex gap-2.5">
+              <div className="mt-4 space-y-2.5">
                 <Link
                   href={`/spots/${selected.spot_id}`}
-                  className="flex-1 rounded-xl bg-cta py-3 text-center text-sm font-bold text-on-cta"
+                  className="block rounded-xl bg-cta py-3 text-center text-sm font-bold text-on-cta"
                 >
                   상세 · 대안 보기
                 </Link>
-                <a
-                  href={`https://map.kakao.com/link/to/${encodeURIComponent(selected.name)},${selected.lat},${selected.lng}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-xl border border-line bg-card px-4 py-3 text-sm font-semibold text-ink"
-                >
-                  길찾기
-                </a>
+                {/* 길찾기 — 내장 지도(Apple)와 카카오맵 중 고를 수 있어야 한다(가이드라인 4) */}
+                <div className="flex gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openAppleMaps({
+                        lat: selected.lat,
+                        lng: selected.lng,
+                        name: spotDisplayName(selected.name),
+                      })
+                    }
+                    className="flex-1 cursor-pointer rounded-xl border border-line bg-card py-3 text-sm font-semibold text-ink"
+                  >
+                    Apple 지도
+                  </button>
+                  <a
+                    href={`https://map.kakao.com/link/to/${encodeURIComponent(selected.name)},${selected.lat},${selected.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 rounded-xl border border-line bg-card py-3 text-center text-sm font-semibold text-ink"
+                  >
+                    카카오맵
+                  </a>
+                </div>
               </div>
             </div>
           </section>

@@ -34,7 +34,8 @@ export function OnboardingSpontaneous() {
         aria-busy={asking}
         className="w-full cursor-pointer rounded-card bg-cta px-5 py-4 text-base font-bold text-on-cta transition-transform active:scale-[0.99] disabled:opacity-60"
       >
-        {asking ? "위치를 확인하는 중…" : "위치 허용하고 시작하기"}
+        {/* 버튼 문구는 중립어만 — 권한 승인을 유도하는 표현은 App Review 5.1.1(iv) 위반 */}
+        {asking ? "위치를 확인하는 중…" : "계속"}
       </button>
       <button
         type="button"
