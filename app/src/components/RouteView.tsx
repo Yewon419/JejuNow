@@ -4,7 +4,7 @@ import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type RouteData, fetchRoute, formatDuration, routeCoord } from "@/lib/api";
 import { haversineKm } from "@/lib/alternatives";
-import { openAppleMaps } from "@/lib/appleMaps";
+import { openAppleMapsRoute } from "@/lib/appleMaps";
 import { spotDisplayName } from "@/lib/constants";
 import { tapLight } from "@/lib/haptics";
 import type { Spot } from "@/lib/types";
@@ -182,7 +182,7 @@ export function RouteView({
   function openInAppleMaps() {
     const fc = routeCoord(from);
     const tc = routeCoord(to);
-    openAppleMaps({ ...tc, name: spotDisplayName(to.name) }, mode, fc);
+    openAppleMapsRoute({ ...tc, name: spotDisplayName(to.name) }, mode, fc);
   }
 
   const footKm = Math.round(straightKm * 1.3 * 10) / 10; // 직선 × 도로 우회 보정

@@ -6,7 +6,7 @@ import Script from "next/script";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { openAppleMaps } from "@/lib/appleMaps";
+import { openAppleMapsPlace } from "@/lib/appleMaps";
 import { MAP_COACH } from "@/lib/coach";
 import {
   HORIZON_END,
@@ -687,7 +687,7 @@ export function MapView({
                   <button
                     type="button"
                     onClick={() =>
-                      openAppleMaps({
+                      openAppleMapsPlace({
                         lat: selected.lat,
                         lng: selected.lng,
                         name: spotDisplayName(selected.name),
