@@ -25,8 +25,7 @@
 - ✅ **기능설명서 PDF 완성**: `docs/contest/제주나우_기능설명서.pdf`(13p, 양식 pptx 그대로 python-pptx로 채움,
   `fill_pptx.py` → `export_pdf.ps1`(PowerPoint COM)). 캡처 = `capture_screens.js`(대표 6장) +
   `capture_steps.js`(기능 흐름 단계 11장, Playwright webkit·iPhone 390×844@3x, 프로덕션). 미리보기 `preview/`
-  ⚠ **표지 팀명은 플레이스홀더** → 대표님이 pptx 1행 수정 후 PDF 재출력(또는 fill_pptx.py TEAM_NAME 수정 후
-  두 스크립트 재실행). ⚠ 홈·지도 캡처의 날짜·인사말은 SSR 서버 시각(새벽 캡처 → "고요한 새벽이에요")
+  표지 팀명 = 한예원(대표님 확정, fill_pptx.py TEAM_NAME). ⚠ 홈·지도 캡처의 날짜·인사말은 SSR 서버 시각(새벽 캡처 → "고요한 새벽이에요")
   → 낮에 두 스크립트 재실행하면 갱신됨(선택)
 - 사람 단계 잔여: 콘텐츠랩 팀 정보 확인·팀원 회원가입 → 운영계정 신청(선택) → UptimeRobot 복구 + cron-job.org
   이중화 → 승인 시 출시 버튼 → 9/21 16:00 전 제출. 상세 = 제출준비 문서 §5

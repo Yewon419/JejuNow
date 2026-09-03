@@ -27,7 +27,7 @@ CAP = HERE / "captures"
 ICON = HERE.parent.parent / "app" / "public" / "icon-512.png"
 PHONE_ASPECT = 1170 / 2532
 
-TEAM_NAME = "(팀명: 콘텐츠랩 접수 팀명 그대로 입력)"
+TEAM_NAME = "한예원"
 
 # ---------- 도우미 ----------
 
