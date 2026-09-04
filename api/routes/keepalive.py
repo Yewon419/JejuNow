@@ -1,4 +1,6 @@
-"""GET /keepalive — 상시 워밍 핑 (UptimeRobot 대상).
+"""GET·HEAD /keepalive — 상시 워밍 핑 (UptimeRobot 대상).
+
+- HEAD도 받는다: UptimeRobot 기본 체크가 HEAD라 GET 전용이면 405 → Down 판정(2026-07-11~09-04 실측).
 
 - 실제 DB 쿼리를 매 핑 수행 — Supabase 무료 티어 일시정지 타이머는
   DB 활동으로만 리셋되므로 정적 응답으로는 무의미. (예측기 캐시 히트 시
@@ -18,7 +20,7 @@ from api.deps import get_db, get_predictor
 router = APIRouter()
 
 
-@router.get("/keepalive")
+@router.api_route("/keepalive", methods=["GET", "HEAD"])
 def keepalive() -> dict[str, str]:
     try:
         rows = get_db().select("spots", {"select": "spot_id", "limit": "1"})

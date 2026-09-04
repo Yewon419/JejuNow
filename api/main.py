@@ -37,6 +37,6 @@ app.include_router(keepalive_router)
 app.include_router(route_router)
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
