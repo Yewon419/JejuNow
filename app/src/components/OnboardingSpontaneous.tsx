@@ -7,6 +7,10 @@ import { tapMedium } from "@/lib/haptics";
 
 // 즉흥 여행자 2단계 — 위치를 왜 쓰는지 먼저 알리고 권한을 요청한다.
 // 대시보드에서 맥락 없이 시스템 팝업이 뜨는 것보다 낫고, 거부해도 괜찮다는 걸 알린다.
+//
+// ⚠ App Review 5.1.1(iv): 사전 안내 화면을 두면 그 뒤에는 **항상** 시스템 권한 요청으로
+// 이어져야 한다. 팝업을 건너뛰는 우회 버튼("나중에 할게요")은 권한 요청을 미루게 만들어
+// 지적받았다(2026-09-04). 거절은 시스템 팝업에서 하고, 거절해도 앱은 그대로 진행한다.
 export function OnboardingSpontaneous() {
   const router = useRouter();
   const [asking, setAsking] = useState(false);
@@ -26,7 +30,7 @@ export function OnboardingSpontaneous() {
   }
 
   return (
-    <div className="mt-8 space-y-3">
+    <div className="mt-8">
       <button
         type="button"
         onClick={allow}
@@ -34,15 +38,8 @@ export function OnboardingSpontaneous() {
         aria-busy={asking}
         className="w-full cursor-pointer rounded-card bg-cta px-5 py-4 text-base font-bold text-on-cta transition-transform active:scale-[0.99] disabled:opacity-60"
       >
-        {/* 버튼 문구는 중립어만 — 권한 승인을 유도하는 표현은 App Review 5.1.1(iv) 위반 */}
+        {/* 버튼 문구는 중립어만 — 권한 승인을 유도하는 표현도 5.1.1(iv) 위반 */}
         {asking ? "위치를 확인하는 중…" : "계속"}
-      </button>
-      <button
-        type="button"
-        onClick={go}
-        className="w-full cursor-pointer rounded-card px-5 py-3 text-sm font-medium text-dim hover:text-ink"
-      >
-        나중에 할게요
       </button>
     </div>
   );
