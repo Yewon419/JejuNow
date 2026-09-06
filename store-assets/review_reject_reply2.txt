@@ -1,0 +1,29 @@
+Hello,
+
+Thank you for the follow-up. Both remaining points are addressed, and the app is now being resubmitted with build 25.
+
+1. GUIDELINE 5.1.1(iv) - THE USER MUST ALWAYS PROCEED TO THE PERMISSION REQUEST
+Understood, and thank you for the precise explanation. The "나중에 할게요" ("Not now") button has been removed from the screen that precedes the system location prompt. That screen now has a single button, "계속" ("Continue"), and tapping it always presents the system location request. There is no longer any way to dismiss the explanation and skip the prompt.
+
+If the user declines at the system prompt, the app simply continues; recommendations then fall back to the user's saved itinerary or to island-wide results. The screen also has an 8 second timeout, so the user is never blocked if no response arrives.
+
+This change is already live. Our app loads its interface from our web server, so you will see the updated screen on any build you open.
+
+To reach it: launch the app and choose "즉흥 여행자" (the spontaneous traveler option) on the first onboarding question. The next screen is the one described above.
+
+2. GUIDELINE 2.1(a) - APP ICON
+We believe this point refers to build 22, which is the build attached to our previous submission. The placeholder icon was replaced in build 25, and build 25 has not been reviewed yet.
+
+To explain the delay on our side: after we replaced the build, our submission was left in a prepared but unsent state, so build 25 never reached your queue. That is corrected with this resubmission. Build 25 is the build attached to this submission, and it contains the final production icon. The same icon is now used for the marketing icon, the in-app header logo, the web app manifest, and the favicon.
+
+If the icon in build 25 still does not meet the requirement, we would be grateful if you could let us know what specifically reads as placeholder content, and we will revise it immediately.
+
+3. PREVIOUSLY RESOLVED ITEMS
+For completeness, the two items from the earlier message remain addressed:
+- The permission screen button wording was changed to a neutral "계속" ("Continue").
+- Apple Maps can now be launched from both places in the app that offer directions. In the Map tab, tap a marker and the sheet shows "Apple 지도" and "카카오맵" below the "상세 · 대안 보기" button. In the Itinerary tab, add two or more spots and tap the travel chip between them; the route sheet shows the same two buttons, and "Apple 지도" opens Apple Maps with the origin, destination, and selected travel mode. Both were verified on a physical iPhone.
+- NSLocationAlwaysAndWhenInUseUsageDescription was added to Info.plist in build 25, resolving ITMS-90683.
+
+The app has no accounts, no in-app purchases, and no user-generated content. Location remains the only sensitive permission, and it is never transmitted off the device.
+
+Thank you for your patience.
